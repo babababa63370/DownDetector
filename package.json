@@ -1,15 +1,25 @@
 {
-  "name": "nodejs",
+  "name": "mobile-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "Application mobile native",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build-android": "expo build:android",
+    "build-ios": "expo build:ios"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^22.13.11"
+    "@types/node": "^22.13.11",
+    "expo": "^49.0.23",
+    "expo-cli": "^6.3.12",
+    "react": "^19.2.0",
+    "react-native": "^0.82.1",
+    "react-native-web": "^0.21.2"
   }
 }
