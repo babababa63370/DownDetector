@@ -4,13 +4,10 @@
     "slug": "mobile-app",
     "version": "1.0.0",
     "platforms": ["android"],
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "android": {
       "package": "com.myapp.mobilapp",
-      "versionCode": 1,
-      "permissions": []
+      "versionCode": 1
     }
   }
 }
