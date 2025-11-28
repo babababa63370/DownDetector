@@ -33,8 +33,9 @@ def index():
 
 @app.route('/login')
 def login():
+    callback_url = os.getenv("CALLBACK_URL", "http://localhost:5000/callback")
     return redirect(
-        f"{DISCORD_OAUTH_URL}?client_id={DISCORD_CLIENT_ID}&redirect_uri=http://localhost:5000/callback&response_type=code&scope=identify%20email"
+        f"{DISCORD_OAUTH_URL}?client_id={DISCORD_CLIENT_ID}&redirect_uri={callback_url}&response_type=code&scope=identify%20email"
     )
 
 @app.route('/callback')
@@ -43,13 +44,14 @@ def callback():
     if not code:
         return redirect(url_for('index'))
     
+    callback_url = os.getenv("CALLBACK_URL", "http://localhost:5000/callback")
     try:
         resp = requests.post(DISCORD_TOKEN_URL, data={
             'client_id': DISCORD_CLIENT_ID,
             'client_secret': DISCORD_CLIENT_SECRET,
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': 'http://localhost:5000/callback'
+            'redirect_uri': callback_url
         })
         
         token_data = resp.json()
