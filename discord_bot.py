@@ -190,6 +190,16 @@ async def show_graph(interaction: discord.Interaction, name: str):
 async def graph_autocomplete(interaction: discord.Interaction, current: str) -> list:
     return await autocomplete_service_name(interaction, current)
 
+@bot.tree.command(name="ping_now", description="Force un ping immédiat pour tous les services")
+async def ping_now(interaction: discord.Interaction):
+    """Force un ping immédiat"""
+    await interaction.response.defer()
+    try:
+        await check_services()
+        await interaction.followup.send("✅ Ping lancé! Les données devraient être disponibles maintenant.")
+    except Exception as e:
+        await interaction.followup.send(f"❌ Erreur: {str(e)}")
+
 @bot.tree.command(name="config_ping", description="Configure l'intervalle de ping (owner only)")
 async def config_ping(interaction: discord.Interaction, interval: int):
     """Configure l'intervalle de ping en secondes (owner only)"""
