@@ -34,7 +34,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd ~ && expo start --web"
+args = "cd /home/runner/workspace && expo start --web"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -43,3 +43,7 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
