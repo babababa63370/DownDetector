@@ -26,15 +26,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Mobile App"
+args = "Default"
 
 [[workflows.workflow]]
-name = "Mobile App"
+name = "Default"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd /home/runner/workspace && python app.py"
+args = "cd /home/runner/workspace && python -m http.server 5000"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -43,7 +43,3 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 8082
-externalPort = 3000
