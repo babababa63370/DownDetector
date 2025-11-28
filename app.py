@@ -205,6 +205,20 @@ def api_status():
     except Exception as e:
         return jsonify({'online': 0, 'down': 0, 'total': 0})
 
+@app.route('/api/logs/<int:service_id>')
+@require_login
+def get_logs(service_id):
+    if not supabase:
+        return jsonify([]), 200
+    
+    try:
+        # Récupère les 100 derniers logs pour un service
+        response = supabase.table("ping_logs").select("*").eq("service_id", service_id).order("created_at", desc=True).limit(100).execute()
+        return jsonify(response.data[::-1])  # Inverse pour avoir du plus ancien au plus récent
+    except Exception as e:
+        print(f"Erreur get_logs: {e}")
+        return jsonify([]), 200
+
 if __name__ == '__main__':
     if DISCORD_TOKEN:
         print("🤖 Bot Discord lancé en arrière-plan...")

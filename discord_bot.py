@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands, tasks
 import aiohttp
+import asyncio
 from config import DISCORD_TOKEN, SUPABASE_URL, SUPABASE_KEY
 from supabase import create_client
 
@@ -122,12 +123,24 @@ async def check_services():
         
         for service in all_services:
             try:
+                import time
+                start_time = time.time()
                 async with aiohttp.ClientSession() as session:
                     async with session.get(service["url"], timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        latency_ms = int((time.time() - start_time) * 1000)
                         old_status = service.get("status")
                         new_status = "online" if resp.status == 200 else "down"
                         
                         supabase.table("services").update({"status": new_status}).eq("id", service["id"]).execute()
+                        
+                        # Enregistre le log de ping
+                        supabase.table("ping_logs").insert({
+                            "service_id": service["id"],
+                            "owner_id": service["owner_id"],
+                            "service_name": service["name"],
+                            "status": new_status,
+                            "latency_ms": latency_ms
+                        }).execute()
                         
                         if old_status != new_status:
                             guild = bot.get_guild(service["guild_id"])
@@ -136,11 +149,21 @@ async def check_services():
                                     try:
                                         emoji = "🟢" if new_status == "online" else "🔴"
                                         await channel.send(
-                                            f"{emoji} **{service['name']}** est maintenant **{new_status.upper()}**"
+                                            f"{emoji} **{service['name']}** est maintenant **{new_status.upper()}** (latence: {latency_ms}ms)"
                                         )
                                         break
                                     except Exception:
                                         continue
+            except asyncio.TimeoutError:
+                # Si timeout, enregistre comme down
+                supabase.table("ping_logs").insert({
+                    "service_id": service["id"],
+                    "owner_id": service["owner_id"],
+                    "service_name": service["name"],
+                    "status": "down",
+                    "latency_ms": 5000
+                }).execute()
+                supabase.table("services").update({"status": "down"}).eq("id", service["id"]).execute()
             except Exception as e:
                 print(f"Erreur check {service.get('name')}: {e}")
     except Exception as e:
