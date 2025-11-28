@@ -69,10 +69,11 @@ async def add_service(interaction: discord.Interaction, url: str, name: str):
             headers=SUPABASE_HEADERS,
             timeout=5
         )
-        if resp.status_code == 201:
+        print(f"Add service response: {resp.status_code} - {resp.text}")
+        if resp.status_code in [200, 201]:
             await interaction.response.send_message(f"✅ Service '{name}' ajouté!")
         else:
-            await interaction.response.send_message(f"❌ Erreur: {resp.text}")
+            await interaction.response.send_message(f"❌ Erreur: {resp.status_code} - {resp.text}")
     except Exception as e:
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
@@ -233,7 +234,7 @@ async def check_services():
                         new_status = "online" if resp.status == 200 else "down"
                         
                         # Enregistre le log
-                        requests.post(
+                        log_resp = requests.post(
                             f"{SUPABASE_URL}/rest/v1/ping_logs",
                             json={
                                 "service_id": service["id"],
@@ -245,14 +246,18 @@ async def check_services():
                             headers=SUPABASE_HEADERS,
                             timeout=5
                         )
+                        if log_resp.status_code not in [200, 201]:
+                            print(f"⚠️ Log POST error ({service['name']}): {log_resp.status_code} - {log_resp.text}")
                         
                         # Update service status
-                        requests.patch(
+                        update_resp = requests.patch(
                             f"{SUPABASE_URL}/rest/v1/services?id=eq.{service['id']}",
                             json={"status": new_status},
                             headers=SUPABASE_HEADERS,
                             timeout=5
                         )
+                        if update_resp.status_code not in [200]:
+                            print(f"⚠️ Update PATCH error ({service['name']}): {update_resp.status_code} - {update_resp.text}")
             except Exception as e:
                 print(f"Erreur check {service.get('name')}: {e}")
     except Exception as e:
