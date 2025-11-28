@@ -48,7 +48,7 @@ async def list_services(interaction: discord.Interaction):
         return
     
     try:
-        response = supabase.table("services").select("*").eq("guild_id", interaction.guild_id).execute()
+        response = supabase.table("services").select("*").eq("owner_id", str(interaction.user.id)).execute()
         services = response.data
         
         if not services:
@@ -76,7 +76,7 @@ async def remove_service(interaction: discord.Interaction, name: str):
         return
     
     try:
-        supabase.table("services").delete().eq("guild_id", interaction.guild_id).eq("name", name).execute()
+        supabase.table("services").delete().eq("owner_id", str(interaction.user.id)).eq("name", name).execute()
         await interaction.response.send_message(f"✅ Service '{name}' supprimé")
     except Exception as e:
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
