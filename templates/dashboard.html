@@ -7,102 +7,219 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #0a0e27;
             color: #fff;
         }
+        
         .nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 40px;
-            background: #1a1f3a;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #1a1f3a 0%, #2a2f4a 100%);
             border-bottom: 2px solid #5865f2;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
-        .logo { font-size: 24px; font-weight: bold; color: #5865f2; }
-        .user-info { display: flex; gap: 20px; align-items: center; }
-        .logout { background: #ed4245; padding: 10px 20px; border: none; border-radius: 5px; color: white; cursor: pointer; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        
+        .logo { 
+            font-size: 20px; 
+            font-weight: bold; 
+            color: #5865f2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(88, 101, 242, 0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+        }
+        
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #5865f2;
+            border: 2px solid #5865f2;
+            object-fit: cover;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+        }
+        
+        @media (min-width: 500px) {
+            .user-name { display: block; }
+        }
+        
+        .logout {
+            background: #ed4245;
+            color: white;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        
+        .logout:hover { background: #c03c37; }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
+            gap: 15px;
+            flex-wrap: wrap;
         }
-        .header h1 { font-size: 32px; }
+        
+        .header h1 {
+            font-size: 28px;
+            flex: 1;
+            min-width: 200px;
+        }
+        
         .btn-add {
-            background: #57f287;
+            background: linear-gradient(135deg, #57f287 0%, #40c360 100%);
             color: #000;
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 700;
             transition: 0.3s;
+            font-size: 14px;
+            white-space: nowrap;
         }
-        .btn-add:hover { background: #40c360; }
+        
+        .btn-add:hover, .btn-add:active { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(87, 242, 135, 0.3); }
+        
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: 1fr;
+            gap: 15px;
         }
+        
+        @media (min-width: 600px) {
+            .services-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (min-width: 1000px) {
+            .services-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        
         .service-card {
-            background: #1a1f3a;
-            padding: 20px;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #1a1f3a 0%, #252a45 100%);
+            padding: 18px;
+            border-radius: 12px;
             border-left: 4px solid #57f287;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: 0.3s;
         }
+        
+        .service-card:hover { transform: translateY(-4px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
         .service-card.down { border-left-color: #ed4245; }
+        
         .service-header {
             display: flex;
             justify-content: space-between;
-            align-items: start;
-            margin-bottom: 15px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            gap: 10px;
         }
-        .service-name { font-size: 18px; font-weight: bold; }
+        
+        .service-name {
+            font-size: 16px;
+            font-weight: 700;
+            flex: 1;
+            word-break: break-word;
+        }
+        
         .status-badge {
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
+        
         .status-badge.online {
             background: #57f287;
             color: #000;
         }
+        
         .status-badge.down {
             background: #ed4245;
             color: white;
         }
+        
         .service-url {
-            color: #aaa;
-            font-size: 14px;
+            color: #9aa;
+            font-size: 12px;
             word-break: break-all;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 5px;
         }
+        
         .service-buttons {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 12px;
         }
-        .btn-delete, .btn-chart {
+        
+        .btn-chart, .btn-delete {
             color: white;
-            padding: 8px 12px;
+            padding: 10px 12px;
             border: none;
-            border-radius: 3px;
+            border-radius: 5px;
             cursor: pointer;
-            flex-grow: 1;
+            flex: 1;
             font-size: 12px;
+            font-weight: 600;
+            transition: 0.3s;
         }
-        .btn-delete {
-            background: #ed4245;
-        }
-        .btn-delete:hover { background: #c03c37; }
+        
         .btn-chart {
             background: #5865f2;
         }
+        
         .btn-chart:hover { background: #4752c4; }
+        
+        .btn-delete {
+            background: #ed4245;
+        }
+        
+        .btn-delete:hover { background: #c03c37; }
+        
         .modal {
             display: none;
             position: fixed;
@@ -110,80 +227,150 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            padding: 20px;
         }
+        
         .modal.active { display: flex; }
+        
         .modal-content {
-            background: #1a1f3a;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 900px;
-            max-height: 80vh;
+            background: linear-gradient(135deg, #1a1f3a 0%, #252a45 100%);
+            padding: 25px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
             overflow-y: auto;
+            border: 1px solid #5865f2;
         }
-        .modal-content h2 { margin-bottom: 20px; }
+        
+        .modal-content h2 {
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #57f287;
+        }
+        
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
         }
-        .form-group label { display: block; margin-bottom: 5px; color: #aaa; }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
         .form-group input {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background: #0a0e27;
             border: 1px solid #5865f2;
             color: white;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 14px;
         }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #57f287;
+            box-shadow: 0 0 8px rgba(87, 242, 135, 0.3);
+        }
+        
         .btn-submit {
             width: 100%;
-            background: #5865f2;
-            color: white;
+            background: linear-gradient(135deg, #57f287 0%, #40c360 100%);
+            color: #000;
             padding: 12px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 10px;
         }
+        
+        .btn-submit:hover { transform: translateY(-2px); }
+        
         .btn-close {
-            background: #ed4245;
+            width: 100%;
+            background: #2a2f4a;
             color: white;
-            padding: 8px 16px;
+            padding: 10px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 15px;
+            font-weight: 600;
         }
-        .empty { text-align: center; padding: 60px 20px; color: #aaa; }
+        
+        .btn-close:hover { background: #3a3f5a; }
+        
         .chart-container {
             position: relative;
-            height: 400px;
+            height: 300px;
             margin-bottom: 20px;
         }
+        
         .chart-stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
             margin-top: 20px;
         }
+        
         .stat-box {
             background: #0a0e27;
             padding: 15px;
             border-radius: 8px;
             text-align: center;
+            border: 1px solid #5865f2;
         }
-        .stat-label { color: #aaa; font-size: 14px; margin-bottom: 8px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #57f287; }
+        
+        .stat-label {
+            color: #aaa;
+            font-size: 12px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #57f287;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #aaa;
+            background: linear-gradient(135deg, #1a1f3a 0%, #252a45 100%);
+            border-radius: 12px;
+            border: 2px dashed #5865f2;
+        }
+        
+        @media (max-width: 480px) {
+            .nav { padding: 12px 15px; }
+            .logo { font-size: 18px; }
+            .header { flex-direction: column; }
+            .header h1 { font-size: 24px; }
+            .btn-add { width: 100%; }
+            .chart-stats { grid-template-columns: 1fr; }
+            .modal-content { padding: 20px; }
+        }
     </style>
 </head>
 <body>
     <nav class="nav">
         <div class="logo">🔍 DownDetector</div>
-        <div class="user-info">
-            <span>Bienvenue, <strong id="username"></strong></span>
+        <div class="user-section">
+            <div class="user-profile">
+                <img src="{{ avatar_url }}" alt="Avatar" class="avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                <span class="user-name" id="username">{{ username }}</span>
+            </div>
             <a href="/logout" class="logout">Déconnexion</a>
         </div>
     </nav>
@@ -191,15 +378,15 @@
     <div class="container">
         <div class="header">
             <h1>Mes Services</h1>
-            <button class="btn-add" onclick="openModal()">+ Ajouter un service</button>
+            <button class="btn-add" onclick="openModal()">+ Ajouter</button>
         </div>
         
         <div class="services-grid" id="servicesGrid">
-            <div class="empty">Aucun service configuré. Clique sur "+ Ajouter un service"</div>
+            <div class="empty">Aucun service configuré. Clique sur "+ Ajouter"</div>
         </div>
     </div>
     
-    <!-- Modal pour ajouter un service -->
+    <!-- Modal pour ajouter -->
     <div id="modal" class="modal">
         <div class="modal-content">
             <h2>Ajouter un service</h2>
@@ -218,7 +405,7 @@
         </div>
     </div>
     
-    <!-- Modal pour afficher le graphique -->
+    <!-- Modal pour le graphique -->
     <div id="chartModal" class="modal">
         <div class="modal-content">
             <h2 id="chartTitle">Historique des pings</h2>
@@ -227,7 +414,7 @@
             </div>
             <div class="chart-stats">
                 <div class="stat-box">
-                    <div class="stat-label">Latence moyenne</div>
+                    <div class="stat-label">Latence moy.</div>
                     <div class="stat-value" id="avgLatency">-</div>
                 </div>
                 <div class="stat-box">
@@ -244,19 +431,21 @@
     </div>
     
     <script>
-        document.getElementById('username').textContent = "{{ username }}";
         let currentChart = null;
         
         function openModal() {
             document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
         
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = '';
         }
         
         function closeChartModal() {
             document.getElementById('chartModal').classList.remove('active');
+            document.body.style.overflow = '';
         }
         
         function loadServices() {
@@ -276,8 +465,8 @@
                             </div>
                             <div class="service-url">${s.url}</div>
                             <div class="service-buttons">
-                                <button class="btn-chart" onclick="showChart(${s.id}, '${s.name}')">📊 Historique</button>
-                                <button class="btn-delete" onclick="deleteService(${s.id})">Supprimer</button>
+                                <button class="btn-chart" onclick="showChart(${s.id}, '${s.name.replace(/'/g, "\\'")}')">📊 Voir</button>
+                                <button class="btn-delete" onclick="deleteService(${s.id})">🗑️ Supprimer</button>
                             </div>
                         </div>
                     `).join('');
@@ -290,16 +479,12 @@
                 .then(logs => {
                     document.getElementById('chartTitle').textContent = `Historique - ${serviceName}`;
                     
-                    // Prépare les données
                     const labels = logs.map(l => {
                         const date = new Date(l.created_at);
-                        return date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+                        return date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
                     });
                     
                     const latencies = logs.map(l => l.latency_ms || 0);
-                    const statuses = logs.map(l => l.status === 'online' ? 100 : 0);
-                    
-                    // Calcule les stats
                     const validLatencies = latencies.filter(l => l > 0);
                     const avgLat = validLatencies.length > 0 ? Math.round(validLatencies.reduce((a, b) => a + b) / validLatencies.length) : 0;
                     const maxLat = validLatencies.length > 0 ? Math.max(...validLatencies) : 0;
@@ -309,7 +494,6 @@
                     document.getElementById('maxLatency').textContent = maxLat + 'ms';
                     document.getElementById('uptime').textContent = uptime + '%';
                     
-                    // Crée le graphique
                     if (currentChart) currentChart.destroy();
                     
                     const ctx = document.getElementById('pingChart').getContext('2d');
@@ -317,60 +501,36 @@
                         type: 'line',
                         data: {
                             labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Latence (ms)',
-                                    data: latencies,
-                                    borderColor: '#5865f2',
-                                    backgroundColor: 'rgba(88, 101, 242, 0.1)',
-                                    tension: 0.4,
-                                    fill: true,
-                                    yAxisID: 'y'
-                                },
-                                {
-                                    label: 'Statut (online)',
-                                    data: statuses,
-                                    borderColor: '#57f287',
-                                    backgroundColor: 'rgba(87, 242, 135, 0.1)',
-                                    tension: 0.4,
-                                    fill: true,
-                                    yAxisID: 'y1'
-                                }
-                            ]
+                            datasets: [{
+                                label: 'Latence (ms)',
+                                data: latencies,
+                                borderColor: '#57f287',
+                                backgroundColor: 'rgba(87, 242, 135, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            interaction: { mode: 'index', intersect: false },
                             plugins: {
-                                legend: { labels: { color: '#fff' } }
+                                legend: { labels: { color: '#fff', font: { size: 12 } } }
                             },
                             scales: {
                                 y: {
-                                    type: 'linear',
-                                    display: true,
-                                    position: 'left',
                                     grid: { color: '#2a2f4a' },
-                                    ticks: { color: '#aaa' },
-                                    title: { display: true, text: 'Latence (ms)', color: '#fff' }
-                                },
-                                y1: {
-                                    type: 'linear',
-                                    display: true,
-                                    position: 'right',
-                                    grid: { drawOnChartArea: false },
-                                    ticks: { color: '#aaa' },
-                                    title: { display: true, text: 'Statut', color: '#fff' }
+                                    ticks: { color: '#aaa', font: { size: 11 } }
                                 },
                                 x: {
                                     grid: { color: '#2a2f4a' },
-                                    ticks: { color: '#aaa' }
+                                    ticks: { color: '#aaa', font: { size: 11 } }
                                 }
                             }
                         }
                     });
                     
                     document.getElementById('chartModal').classList.add('active');
+                    document.body.style.overflow = 'hidden';
                 });
         }
         

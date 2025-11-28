@@ -82,6 +82,13 @@ def callback_discord():
         session['username'] = user_data['username']
         session['email'] = user_data.get('email')
         
+        # Récupère l'avatar Discord
+        avatar_hash = user_data.get('avatar')
+        if avatar_hash:
+            session['avatar_url'] = f"https://cdn.discordapp.com/avatars/{user_data['id']}/{avatar_hash}.png"
+        else:
+            session['avatar_url'] = f"https://cdn.discordapp.com/embed/avatars/{int(user_data['id']) % 5}.png"
+        
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"Discord callback error: {e}")
@@ -129,7 +136,7 @@ def login():
 @app.route('/dashboard')
 @require_login
 def dashboard():
-    return render_template('dashboard.html', username=session.get('username'))
+    return render_template('dashboard.html', username=session.get('username'), avatar_url=session.get('avatar_url'))
 
 @app.route('/logout')
 def logout():
