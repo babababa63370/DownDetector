@@ -3,12 +3,20 @@ from discord.ext import commands, tasks
 import aiohttp
 import asyncio
 from config import DISCORD_TOKEN, SUPABASE_URL, SUPABASE_KEY
-from supabase import create_client
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+# Lazy initialization de Supabase pour éviter les erreurs d'import
+_supabase = None
+
+def get_supabase():
+    global _supabase
+    if _supabase is None:
+        if SUPABASE_URL and SUPABASE_KEY:
+            from supabase import create_client
+            _supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    return _supabase
 
 # Configuration du ping interval (en minutes)
 ping_interval = 5
@@ -23,9 +31,9 @@ async def on_ready():
         print(f"❌ Erreur sync: {e}")
     
     # Crée la table ping_logs si elle n'existe pas
-    if supabase:
+    if get_supabase():
         try:
-            supabase.table("ping_logs").select("id").limit(1).execute()
+            get_supabase().table("ping_logs").select("id").limit(1).execute()
         except Exception as e:
             if "Could not find the table" in str(e):
                 print("📊 Création de la table ping_logs...")
@@ -69,7 +77,7 @@ async def add_service(interaction: discord.Interaction, url: str, name: str):
         return
     
     try:
-        supabase.table("services").insert({
+        get_supabase().table("services").insert({
             "guild_id": interaction.guild_id,
             "name": name,
             "url": url,
@@ -88,7 +96,7 @@ async def list_services(interaction: discord.Interaction):
         return
     
     try:
-        response = supabase.table("services").select("*").eq("owner_id", str(interaction.user.id)).execute()
+        response = get_supabase().table("services").select("*").eq("owner_id", str(interaction.user.id)).execute()
         services = response.data
         
         if not services:
@@ -116,7 +124,7 @@ async def remove_service(interaction: discord.Interaction, name: str):
         return
     
     try:
-        supabase.table("services").delete().eq("owner_id", str(interaction.user.id)).eq("name", name).execute()
+        get_supabase().table("services").delete().eq("owner_id", str(interaction.user.id)).eq("name", name).execute()
         await interaction.response.send_message(f"✅ Service '{name}' supprimé")
     except Exception as e:
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
@@ -130,7 +138,7 @@ async def show_graph(interaction: discord.Interaction, name: str):
     
     try:
         # Récupère le service
-        services_resp = supabase.table("services").select("*").eq("owner_id", str(interaction.user.id)).eq("name", name).execute()
+        services_resp = get_supabase().table("services").select("*").eq("owner_id", str(interaction.user.id)).eq("name", name).execute()
         if not services_resp.data:
             await interaction.response.send_message(f"❌ Service '{name}' non trouvé")
             return
@@ -139,7 +147,7 @@ async def show_graph(interaction: discord.Interaction, name: str):
         service_id = service['id']
         
         # Récupère les logs
-        logs_resp = supabase.table("ping_logs").select("*").eq("service_id", service_id).order("created_at", desc=False).limit(100).execute()
+        logs_resp = get_supabase().table("ping_logs").select("*").eq("service_id", service_id).order("created_at", desc=False).limit(100).execute()
         logs = logs_resp.data
         
         if not logs:
@@ -235,7 +243,7 @@ async def check_services():
         return
     
     try:
-        response = supabase.table("services").select("*").execute()
+        response = get_supabase().table("services").select("*").execute()
         all_services = response.data
         
         for service in all_services:
@@ -248,10 +256,10 @@ async def check_services():
                         old_status = service.get("status")
                         new_status = "online" if resp.status == 200 else "down"
                         
-                        supabase.table("services").update({"status": new_status}).eq("id", service["id"]).execute()
+                        get_supabase().table("services").update({"status": new_status}).eq("id", service["id"]).execute()
                         
                         # Enregistre le log de ping
-                        supabase.table("ping_logs").insert({
+                        get_supabase().table("ping_logs").insert({
                             "service_id": service["id"],
                             "owner_id": service["owner_id"],
                             "service_name": service["name"],
@@ -273,14 +281,14 @@ async def check_services():
                                         continue
             except asyncio.TimeoutError:
                 # Si timeout, enregistre comme down
-                supabase.table("ping_logs").insert({
+                get_supabase().table("ping_logs").insert({
                     "service_id": service["id"],
                     "owner_id": service["owner_id"],
                     "service_name": service["name"],
                     "status": "down",
                     "latency_ms": 5000
                 }).execute()
-                supabase.table("services").update({"status": "down"}).eq("id", service["id"]).execute()
+                get_supabase().table("services").update({"status": "down"}).eq("id", service["id"]).execute()
             except Exception as e:
                 print(f"Erreur check {service.get('name')}: {e}")
     except Exception as e:
