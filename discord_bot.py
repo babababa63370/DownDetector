@@ -14,8 +14,12 @@ def get_supabase():
     global _supabase
     if _supabase is None:
         if SUPABASE_URL and SUPABASE_KEY:
-            from supabase import create_client
-            _supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            try:
+                from supabase import create_client
+                _supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            except Exception as e:
+                print(f"⚠️ Supabase init error (non-critical): {e}")
+                _supabase = None
     return _supabase
 
 # Configuration du ping interval (en minutes)

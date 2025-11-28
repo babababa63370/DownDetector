@@ -21,8 +21,12 @@ def get_supabase():
     global _supabase_client
     if _supabase_client is None:
         if SUPABASE_URL and SUPABASE_KEY:
-            from supabase import create_client
-            _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            try:
+                from supabase import create_client
+                _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            except Exception as e:
+                print(f"⚠️ Supabase init error (non-critical): {e}")
+                _supabase_client = None
     return _supabase_client
 
 # Stockage en mémoire des utilisateurs (en dev)
