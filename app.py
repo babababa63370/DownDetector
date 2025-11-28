@@ -1,6 +1,5 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from config import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SECRET_KEY, SUPABASE_URL, SUPABASE_KEY, DISCORD_TOKEN
-from supabase import create_client
 from discord_bot import bot
 import requests
 from functools import wraps
@@ -15,8 +14,16 @@ DISCORD_API_URL = "https://discord.com/api"
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# Supabase
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+# Lazy initialization de Supabase
+_supabase_client = None
+
+def get_supabase():
+    global _supabase_client
+    if _supabase_client is None:
+        if SUPABASE_URL and SUPABASE_KEY:
+            from supabase import create_client
+            _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    return _supabase_client
 
 # Stockage en mémoire des utilisateurs (en dev)
 users_db = {}
@@ -154,12 +161,12 @@ def logout():
 @app.route('/api/services', methods=['GET'])
 @require_login
 def get_services():
-    if not supabase:
+    if not get_supabase():
         return jsonify([]), 200
     
     try:
         user_id = session['user_id']
-        response = supabase.table("services").select("*").eq("owner_id", user_id).execute()
+        response = get_supabase().table("services").select("*").eq("owner_id", user_id).execute()
         return jsonify(response.data)
     except Exception as e:
         print(f"Erreur get_services: {e}")
@@ -168,14 +175,14 @@ def get_services():
 @app.route('/api/services', methods=['POST'])
 @require_login
 def add_service():
-    if not supabase:
+    if not get_supabase():
         return jsonify({"error": "Supabase non configuré"}), 500
     
     try:
         user_id = session['user_id']
         data = request.json
         
-        response = supabase.table("services").insert({
+        response = get_supabase().table("services").insert({
             'name': data.get('name'),
             'url': data.get('url'),
             'status': 'online',
@@ -191,11 +198,11 @@ def add_service():
 @app.route('/api/services/<int:service_id>', methods=['DELETE'])
 @require_login
 def delete_service(service_id):
-    if not supabase:
+    if not get_supabase():
         return jsonify({"error": "Supabase non configuré"}), 500
     
     try:
-        supabase.table("services").delete().eq("id", service_id).execute()
+        get_supabase().table("services").delete().eq("id", service_id).execute()
         return jsonify({'status': 'deleted'}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -213,11 +220,11 @@ def get_user():
 
 @app.route('/api/status')
 def api_status():
-    if not supabase:
+    if not get_supabase():
         return jsonify({'online': 0, 'down': 0, 'total': 0})
     
     try:
-        response = supabase.table("services").select("status").execute()
+        response = get_supabase().table("services").select("status").execute()
         all_services = response.data
         
         online = sum(1 for s in all_services if s.get('status') == 'online')
@@ -234,12 +241,12 @@ def api_status():
 @app.route('/api/logs/<int:service_id>')
 @require_login
 def get_logs(service_id):
-    if not supabase:
+    if not get_supabase():
         return jsonify([]), 200
     
     try:
         # Récupère les 100 derniers logs pour un service
-        response = supabase.table("ping_logs").select("*").eq("service_id", service_id).order("created_at", desc=True).limit(100).execute()
+        response = get_supabase().table("ping_logs").select("*").eq("service_id", service_id).order("created_at", desc=True).limit(100).execute()
         logs = response.data[::-1]  # Inverse pour avoir du plus ancien au plus récent
         
         # Si pas de logs, ajoute des données de test
