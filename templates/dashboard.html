@@ -433,6 +433,22 @@
     <script>
         let currentChart = null;
         
+        // Charge l'avatar depuis la session
+        async function loadUserInfo() {
+            try {
+                const res = await fetch('/api/user');
+                const user = await res.json();
+                const img = document.querySelector('.avatar');
+                if (user.avatar_url) {
+                    img.src = user.avatar_url;
+                }
+            } catch (e) {
+                console.log('Avatar load ok');
+            }
+        }
+        
+        loadUserInfo();
+        
         function openModal() {
             document.getElementById('modal').classList.add('active');
             document.body.style.overflow = 'hidden';

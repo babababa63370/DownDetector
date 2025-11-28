@@ -200,6 +200,17 @@ def delete_service(service_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/user')
+@require_login
+def get_user():
+    avatar_url = session.get('avatar_url')
+    if not avatar_url:
+        avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
+    return jsonify({
+        'username': session.get('username'),
+        'avatar_url': avatar_url
+    })
+
 @app.route('/api/status')
 def api_status():
     if not supabase:
