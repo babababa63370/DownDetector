@@ -7,6 +7,11 @@ from functools import wraps
 import os
 import hashlib
 
+# Discord OAuth URLs
+DISCORD_OAUTH_URL = "https://discord.com/api/oauth2/authorize"
+DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
+DISCORD_API_URL = "https://discord.com/api"
+
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
@@ -32,6 +37,55 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('index.html')
+
+@app.route('/login/discord')
+def login_discord():
+    callback_url = os.getenv("CALLBACK_URL", "http://localhost:5000/callback/discord")
+    return redirect(
+        f"{DISCORD_OAUTH_URL}?client_id={DISCORD_CLIENT_ID}&redirect_uri={callback_url}&response_type=code&scope=identify%20email"
+    )
+
+@app.route('/callback/discord')
+def callback_discord():
+    code = request.args.get('code')
+    if not code:
+        return redirect(url_for('index'))
+    
+    callback_url = os.getenv("CALLBACK_URL", "http://localhost:5000/callback/discord")
+    try:
+        resp = requests.post(DISCORD_TOKEN_URL, data={
+            'client_id': DISCORD_CLIENT_ID,
+            'client_secret': DISCORD_CLIENT_SECRET,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': callback_url
+        })
+        
+        token_data = resp.json()
+        if 'error' in token_data:
+            print(f"Discord error: {token_data}")
+            return redirect(url_for('index'))
+        
+        access_token = token_data.get('access_token')
+        
+        user_resp = requests.get(
+            f"{DISCORD_API_URL}/users/@me",
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        user_data = user_resp.json()
+        
+        if 'error' in user_data:
+            print(f"Discord user error: {user_data}")
+            return redirect(url_for('index'))
+        
+        session['user_id'] = user_data['id']
+        session['username'] = user_data['username']
+        session['email'] = user_data.get('email')
+        
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        print(f"Discord callback error: {e}")
+        return redirect(url_for('index'))
 
 @app.route('/api/register', methods=['POST'])
 def register():

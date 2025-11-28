@@ -69,12 +69,26 @@
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
+            margin-top: 10px;
         }
         button:hover {
             background: #5568d3;
         }
-        button:active {
-            transform: scale(0.98);
+        .discord-btn {
+            background: #5865f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .discord-btn:hover {
+            background: #4752c4;
+        }
+        .divider {
+            text-align: center;
+            color: #999;
+            margin: 20px 0;
+            font-size: 14px;
         }
         .tabs {
             display: flex;
@@ -120,6 +134,16 @@
     <div class="container">
         <div class="logo">🔍</div>
         <div class="title">DownDetector</div>
+        
+        <!-- Discord Login -->
+        <a href="/login/discord" style="text-decoration: none;">
+            <button class="discord-btn">
+                <span>🎮</span>
+                <span>Se connecter avec Discord</span>
+            </button>
+        </a>
+        
+        <div class="divider">ou</div>
         
         <div class="tabs">
             <button class="tab active" onclick="switchTab('login')">Connexion</button>
