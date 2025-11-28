@@ -121,20 +121,18 @@ async def remove_service(interaction: discord.Interaction, name: str):
     except Exception as e:
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
-@bot.tree.command(name="graph", description="Affiche le graphique d'un service")
+@bot.tree.command(name="graph", description="Affiche les stats et graphique d'un service")
 async def show_graph(interaction: discord.Interaction, name: str):
-    """Affiche le graphique des pings d'un service"""
+    """Affiche les stats d'un service avec lien vers graphique interactif"""
     if not supabase:
         await interaction.response.send_message("❌ Erreur: Supabase non configuré")
         return
-    
-    await interaction.response.defer()
     
     try:
         # Récupère le service
         services_resp = supabase.table("services").select("*").eq("owner_id", str(interaction.user.id)).eq("name", name).execute()
         if not services_resp.data:
-            await interaction.followup.send(f"❌ Service '{name}' non trouvé")
+            await interaction.response.send_message(f"❌ Service '{name}' non trouvé")
             return
         
         service = services_resp.data[0]
@@ -145,54 +143,64 @@ async def show_graph(interaction: discord.Interaction, name: str):
         logs = logs_resp.data
         
         if not logs:
-            await interaction.followup.send(f"❌ Aucun historique pour '{name}'")
+            await interaction.response.send_message(f"❌ Aucun historique pour '{name}'")
             return
         
-        # Génère le graphique (lazy import)
-        import matplotlib.pyplot as plt
-        import io
-        
-        plt.style.use('dark_background')
-        fig, ax1 = plt.subplots(1, 1, figsize=(10, 5))
-        
-        # Données
-        times = [i for i in range(len(logs))]
+        # Calcule les stats
         latencies = [l.get('latency_ms', 0) for l in logs]
-        
-        # Graphique: Latence
-        ax1.plot(times, latencies, color='#57f287', linewidth=2, marker='o', markersize=3)
-        ax1.fill_between(times, latencies, alpha=0.3, color='#57f287')
-        ax1.set_ylabel('Latence (ms)', color='#aaa', fontsize=11)
-        ax1.set_title(f'Historique - {name}', color='#fff', fontsize=14, fontweight='bold')
-        ax1.grid(True, alpha=0.2, color='#5865f2')
-        ax1.set_facecolor('#0a0e27')
-        
-        # Stats
         valid_latencies = [l for l in latencies if l > 0]
         avg_latency = int(sum(valid_latencies) / len(valid_latencies)) if valid_latencies else 0
         max_latency = max(valid_latencies) if valid_latencies else 0
+        min_latency = min(valid_latencies) if valid_latencies else 0
+        
         statuses = [l.get('status') for l in logs]
         uptime = int((len([s for s in statuses if s == 'online']) / len(statuses)) * 100)
+        down_count = len([s for s in statuses if s == 'offline'])
         
-        # Sauvegarde en bytes
-        buf = io.BytesIO()
-        plt.tight_layout()
-        plt.savefig(buf, format='png', facecolor='#1a1f3a', dpi=80, bbox_inches='tight')
-        buf.seek(0)
-        plt.close(fig)
+        # Détermine la couleur
+        if uptime >= 95:
+            color = discord.Color.green()
+            status_emoji = "🟢"
+        elif uptime >= 80:
+            color = discord.Color.yellow()
+            status_emoji = "🟡"
+        else:
+            color = discord.Color.red()
+            status_emoji = "🔴"
         
-        # Envoie l'image
-        file = discord.File(buf, filename=f'{name}_graph.png')
+        # Crée l'embed
         embed = discord.Embed(
-            title=f'📊 {name}',
-            description=f'**Latence moy:** {avg_latency}ms | **Max:** {max_latency}ms | **Uptime:** {uptime}%',
-            color=discord.Color.green() if uptime > 90 else discord.Color.red()
+            title=f"📊 {name}",
+            description=f"{status_emoji} **Status:** {service.get('status', 'unknown')}",
+            color=color,
+            url=f"https://0f19beb3-5918-4629-9b4b-283c0f6e2372-00-2w544i7ovzoww.janeway.replit.dev/dashboard"
         )
-        await interaction.followup.send(embed=embed, file=file)
+        
+        embed.add_field(
+            name="⏱️ Latence",
+            value=f"Moy: **{avg_latency}ms**\nMax: **{max_latency}ms**\nMin: **{min_latency}ms**",
+            inline=True
+        )
+        
+        embed.add_field(
+            name="✅ Disponibilité",
+            value=f"Uptime: **{uptime}%**\nIndisponibilités: **{down_count}**",
+            inline=True
+        )
+        
+        embed.add_field(
+            name="🔗 Données",
+            value=f"Enregistrements: **{len(logs)}**",
+            inline=False
+        )
+        
+        embed.set_footer(text="Clic sur le titre pour voir le graphique interactif!")
+        
+        await interaction.response.send_message(embed=embed)
         
     except Exception as e:
         print(f"Erreur graph: {e}")
-        await interaction.followup.send(f"❌ Erreur: {str(e)}")
+        await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
 @bot.tree.command(name="config_ping", description="Configure l'intervalle de ping (owner only)")
 async def config_ping(interaction: discord.Interaction, interval: int):
