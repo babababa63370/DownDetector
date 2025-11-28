@@ -1,12 +1,21 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
-from config import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SECRET_KEY, SUPABASE_URL, SUPABASE_KEY
+from config import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SECRET_KEY, SUPABASE_URL, SUPABASE_KEY, DISCORD_TOKEN
 from supabase import create_client
+from discord_bot import start_bot
 import requests
 from functools import wraps
 import os
+import threading
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+
+# Lancer le bot Discord en arrière-plan au démarrage
+@app.before_request
+def start_bot_once():
+    if not hasattr(app, 'bot_started'):
+        start_bot()
+        app.bot_started = True
 
 # Discord OAuth
 DISCORD_OAUTH_URL = "https://discord.com/api/oauth2/authorize"
@@ -151,4 +160,5 @@ def api_status():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    start_bot()
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

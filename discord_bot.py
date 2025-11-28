@@ -3,20 +3,24 @@ from discord.ext import commands, tasks
 import aiohttp
 from config import DISCORD_TOKEN, SUPABASE_URL, SUPABASE_KEY
 from supabase import create_client
-from datetime import datetime
-from typing import Optional
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Supabase
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot connecté: {bot.user}")
-    check_services.start()
+    print(f"✅ Bot Discord connecté: {bot.user}")
+    try:
+        synced = await bot.tree.sync()
+        print(f"✅ {len(synced)} commandes synchronisées")
+    except Exception as e:
+        print(f"❌ Erreur sync: {e}")
+    
+    if not check_services.is_running():
+        check_services.start()
 
 @bot.tree.command(name="add_service", description="Ajoute un service à monitorer")
 async def add_service(interaction: discord.Interaction, url: str, name: str):
@@ -31,7 +35,7 @@ async def add_service(interaction: discord.Interaction, url: str, name: str):
             "name": name,
             "url": url,
             "status": "online",
-            "owner_id": interaction.user.id
+            "owner_id": str(interaction.user.id)
         }).execute()
         await interaction.response.send_message(f"✅ Service '{name}' ajouté: {url}")
     except Exception as e:
@@ -110,7 +114,7 @@ async def check_services():
                                     except Exception:
                                         continue
             except Exception as e:
-                print(f"Erreur lors du check de {service['name']}: {e}")
+                print(f"Erreur check {service.get('name')}: {e}")
     except Exception as e:
         print(f"Erreur check_services: {e}")
 
@@ -118,17 +122,10 @@ async def check_services():
 async def before_check():
     await bot.wait_until_ready()
 
-@bot.event
-async def on_ready():
-    print(f"✅ Bot prêt: {bot.user}")
-    try:
-        synced = await bot.tree.sync()
-        print(f"✅ {len(synced)} commandes synchronisées")
-    except Exception as e:
-        print(f"❌ Erreur sync: {e}")
-    
-    if not check_services.is_running():
-        check_services.start()
-
-if __name__ == "__main__":
-    bot.run(DISCORD_TOKEN)
+def start_bot():
+    """Lance le bot Discord dans un thread"""
+    import threading
+    if DISCORD_TOKEN:
+        thread = threading.Thread(target=lambda: bot.run(DISCORD_TOKEN), daemon=True)
+        thread.start()
+        print("🤖 Bot Discord lancé en arrière-plan...")
