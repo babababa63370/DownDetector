@@ -3,136 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DownDetector Discord - Monitore tes services</title>
+    <title>DownDetector Discord - Connexion</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0a0e27;
-            color: #fff;
-            line-height: 1.6;
-        }
-        .nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            padding: 20px 40px;
-            background: #1a1f3a;
-            border-bottom: 2px solid #5865f2;
+            padding: 20px;
         }
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #5865f2;
-        }
-        .nav a {
-            color: #fff;
-            text-decoration: none;
-            padding: 10px 20px;
-            background: #5865f2;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .nav a:hover {
-            background: #4752c4;
-        }
-        .hero {
-            text-align: center;
-            padding: 100px 40px;
-        }
-        .hero h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #5865f2, #57f287);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .hero p {
-            font-size: 18px;
-            color: #aaa;
-            margin-bottom: 40px;
-        }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            padding: 60px 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .feature {
-            background: #1a1f3a;
-            padding: 30px;
-            border-radius: 10px;
-            border-left: 4px solid #5865f2;
-        }
-        .feature h3 {
-            color: #57f287;
-            margin-bottom: 10px;
-        }
-        .feature p {
-            color: #aaa;
-        }
-        .btn-group {
-            text-align: center;
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
             padding: 40px;
         }
-        .btn {
-            background: #5865f2;
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
+        .logo {
+            text-align: center;
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
             transition: 0.3s;
-            margin: 10px;
         }
-        .btn:hover {
-            background: #4752c4;
-            transform: translateY(-2px);
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
         }
-        .btn.secondary {
-            background: transparent;
-            border: 2px solid #5865f2;
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+        .tab {
+            padding: 10px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #999;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: 0.3s;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .error {
+            color: #ed4245;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .success {
+            color: #57f287;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <nav class="nav">
-        <div class="logo">🔍 DownDetector</div>
-        <a href="/login">Connexion Discord</a>
-    </nav>
-    
-    <div class="hero">
-        <h1>Monitore tes services avec Discord 🚀</h1>
-        <p>Reçois des notifications instantanées quand un service est down</p>
+    <div class="container">
+        <div class="logo">🔍</div>
+        <div class="title">DownDetector</div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('login')">Connexion</button>
+            <button class="tab" onclick="switchTab('register')">Créer un compte</button>
+        </div>
+        
+        <!-- Login Tab -->
+        <div id="login" class="tab-content active">
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email ou nom d'utilisateur</label>
+                    <input type="text" id="login_user" placeholder="utilisateur@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="login_pass" placeholder="••••••••" required>
+                </div>
+                <button type="submit">Se connecter</button>
+                <div id="login_error" class="error"></div>
+            </form>
+        </div>
+        
+        <!-- Register Tab -->
+        <div id="register" class="tab-content">
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Nom d'utilisateur</label>
+                    <input type="text" id="reg_user" placeholder="mon_pseudo" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="reg_email" placeholder="vous@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="reg_pass" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirmer le mot de passe</label>
+                    <input type="password" id="reg_pass2" placeholder="••••••••" required>
+                </div>
+                <button type="submit">Créer un compte</button>
+                <div id="reg_error" class="error"></div>
+                <div id="reg_success" class="success"></div>
+            </form>
+        </div>
     </div>
     
-    <div class="features">
-        <div class="feature">
-            <h3>⚡ Détection automatique</h3>
-            <p>Vérifie chaque 5 minutes si tes services sont en ligne</p>
-        </div>
-        <div class="feature">
-            <h3>💬 Notifications Discord</h3>
-            <p>Sois alerté directement sur Discord quand un service tombe</p>
-        </div>
-        <div class="feature">
-            <h3>🎯 Configuration facile</h3>
-            <p>Ajoute tes services en un clic depuis Discord ou le web</p>
-        </div>
-        <div class="feature">
-            <h3>📊 Dashboard en temps réel</h3>
-            <p>Vois l'état de tous tes services depuis ton compte</p>
-        </div>
-    </div>
-    
-    <div class="btn-group">
-        <a href="/login" class="btn">Se connecter avec Discord</a>
-        <a href="#" class="btn secondary">Voir la démo</a>
-    </div>
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('login_user').value;
+            const pass = document.getElementById('login_pass').value;
+            const errorDiv = document.getElementById('login_error');
+            
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: user, password: pass})
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    errorDiv.textContent = data.error || 'Erreur de connexion';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Erreur réseau';
+            }
+        }
+        
+        async function handleRegister(e) {
+            e.preventDefault();
+            const user = document.getElementById('reg_user').value;
+            const email = document.getElementById('reg_email').value;
+            const pass = document.getElementById('reg_pass').value;
+            const pass2 = document.getElementById('reg_pass2').value;
+            const errorDiv = document.getElementById('reg_error');
+            const successDiv = document.getElementById('reg_success');
+            
+            if (pass !== pass2) {
+                errorDiv.textContent = 'Les mots de passe ne correspondent pas';
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: user, email: email, password: pass})
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    successDiv.textContent = 'Compte créé! Connecte-toi maintenant.';
+                    setTimeout(() => {
+                        switchTab('login');
+                        document.getElementById('login_user').value = user;
+                    }, 1500);
+                } else {
+                    errorDiv.textContent = data.error || 'Erreur lors de la création';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Erreur réseau';
+            }
+        }
+    </script>
 </body>
 </html>

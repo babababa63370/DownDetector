@@ -5,23 +5,25 @@ from discord_bot import bot
 import requests
 from functools import wraps
 import os
+import hashlib
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# Discord OAuth
-DISCORD_OAUTH_URL = "https://discord.com/api/oauth2/authorize"
-DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
-DISCORD_API_URL = "https://discord.com/api"
-
 # Supabase
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+
+# Stockage en mémoire des utilisateurs (en dev)
+users_db = {}
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def require_login(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('login'))
+            return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -31,46 +33,44 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('index.html')
 
-@app.route('/login')
-def login():
-    callback_url = os.getenv("CALLBACK_URL", "http://localhost:5000/callback")
-    return redirect(
-        f"{DISCORD_OAUTH_URL}?client_id={DISCORD_CLIENT_ID}&redirect_uri={callback_url}&response_type=code&scope=identify%20email"
-    )
-
-@app.route('/callback')
-def callback():
-    code = request.args.get('code')
-    if not code:
-        return redirect(url_for('index'))
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '')
     
-    callback_url = os.getenv("CALLBACK_URL", "http://localhost:5000/callback")
-    try:
-        resp = requests.post(DISCORD_TOKEN_URL, data={
-            'client_id': DISCORD_CLIENT_ID,
-            'client_secret': DISCORD_CLIENT_SECRET,
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': callback_url
-        })
-        
-        token_data = resp.json()
-        access_token = token_data.get('access_token')
-        
-        user_resp = requests.get(
-            f"{DISCORD_API_URL}/users/@me",
-            headers={'Authorization': f'Bearer {access_token}'}
-        )
-        user_data = user_resp.json()
-        
-        session['user_id'] = user_data['id']
-        session['username'] = user_data['username']
-        session['avatar'] = user_data.get('avatar')
-        
-        return redirect(url_for('dashboard'))
-    except Exception as e:
-        print(f"Erreur OAuth: {e}")
-        return redirect(url_for('index'))
+    if not username or not email or not password:
+        return jsonify({'error': 'Tous les champs sont requis'}), 400
+    
+    if username in users_db:
+        return jsonify({'error': 'Ce nom d\'utilisateur existe déjà'}), 400
+    
+    users_db[username] = {
+        'email': email,
+        'password': hash_password(password)
+    }
+    
+    return jsonify({'success': True}), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    
+    if username not in users_db:
+        return jsonify({'error': 'Utilisateur ou mot de passe incorrect'}), 401
+    
+    user = users_db[username]
+    if user['password'] != hash_password(password):
+        return jsonify({'error': 'Utilisateur ou mot de passe incorrect'}), 401
+    
+    session['user_id'] = username
+    session['username'] = username
+    session['email'] = user['email']
+    
+    return jsonify({'success': True}), 200
 
 @app.route('/dashboard')
 @require_login
@@ -93,7 +93,8 @@ def get_services():
         response = supabase.table("services").select("*").eq("owner_id", user_id).execute()
         return jsonify(response.data)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Erreur get_services: {e}")
+        return jsonify([]), 200
 
 @app.route('/api/services', methods=['POST'])
 @require_login
@@ -115,6 +116,7 @@ def add_service():
         
         return jsonify(response.data[0] if response.data else {}), 201
     except Exception as e:
+        print(f"Erreur add_service: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/services/<int:service_id>', methods=['DELETE'])
@@ -147,7 +149,7 @@ def api_status():
             'total': len(all_services)
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'online': 0, 'down': 0, 'total': 0})
 
 if __name__ == '__main__':
     if DISCORD_TOKEN:
