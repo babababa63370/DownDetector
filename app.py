@@ -82,13 +82,19 @@ def callback_discord():
         session['username'] = user_data['username']
         session['email'] = user_data.get('email')
         
-        # Récupère l'avatar Discord
+        # Récupère l'avatar Discord avec le bon format
         avatar_hash = user_data.get('avatar')
+        print(f"DEBUG: Avatar data: {avatar_hash}, User ID: {user_data['id']}")
+        
         if avatar_hash:
-            session['avatar_url'] = f"https://cdn.discordapp.com/avatars/{user_data['id']}/{avatar_hash}.png"
+            # Détecte si c'est un animated avatar (gif) ou static (png)
+            avatar_format = "gif" if avatar_hash.startswith("a_") else "png"
+            session['avatar_url'] = f"https://cdn.discordapp.com/avatars/{user_data['id']}/{avatar_hash}.{avatar_format}?size=256"
         else:
+            # Avatar par défaut basé sur discriminator
             session['avatar_url'] = f"https://cdn.discordapp.com/embed/avatars/{int(user_data['id']) % 5}.png"
         
+        print(f"DEBUG: Avatar URL: {session['avatar_url']}")
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"Discord callback error: {e}")
