@@ -9,6 +9,9 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
+# Configuration du ping interval (en minutes)
+ping_interval = 5
+
 @bot.event
 async def on_ready():
     print(f"✅ Bot Discord connecté: {bot.user}")
@@ -81,7 +84,33 @@ async def remove_service(interaction: discord.Interaction, name: str):
     except Exception as e:
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
-@tasks.loop(minutes=5)
+@bot.tree.command(name="config_ping", description="Configure l'intervalle de ping (owner only)")
+async def config_ping(interaction: discord.Interaction, interval: int):
+    """Configure l'intervalle de ping en secondes (owner only)"""
+    global ping_interval
+    
+    # Vérifie si l'utilisateur est le propriétaire du bot
+    app_info = await bot.application_info()
+    if interaction.user.id != app_info.owner.id:
+        await interaction.response.send_message("❌ Seul le propriétaire du bot peut utiliser cette commande!", ephemeral=True)
+        return
+    
+    # Vérifie que l'intervalle est raisonnable (min 10 secondes, max 1 heure)
+    if interval < 10 or interval > 3600:
+        await interaction.response.send_message("❌ L'intervalle doit être entre 10 secondes et 1 heure (3600s)")
+        return
+    
+    # Convertir en minutes pour la tâche
+    new_interval_minutes = interval / 60
+    
+    # Redémarrer la tâche avec le nouvel intervalle
+    check_services.change_interval(minutes=new_interval_minutes)
+    ping_interval = interval
+    
+    await interaction.response.send_message(f"✅ Intervalle de ping configuré à **{interval} secondes** ({new_interval_minutes:.1f} minutes)")
+    print(f"🔄 Intervalle de ping changé à {interval}s par {interaction.user.name}")
+
+@tasks.loop(minutes=5)  # Default 5 minutes, can be changed with /config_ping
 async def check_services():
     """Vérifie le statut des services toutes les 5 minutes"""
     if not supabase:
