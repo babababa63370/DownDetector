@@ -1,0 +1,12 @@
+salut,bonjour,coucou|Bonjour! Comment ça va?
+ça va,ca va|Bien merci! Et toi, ça va?
+au revoir,bye,ciao|À bientôt! Bonne journée!
+qui es-tu,c'est quoi,what are you|Je suis un chatbot intelligent avec des règles!
+aide,help|Je peux répondre à tes questions. Essaie: bonjour, ça va, au revoir
+merci,thanks|Avec plaisir! 😊
+s'il te plaît,please|Bien sûr, comment je peux t'aider?
+comment tu t'appelles,quel est ton nom|Je n'ai pas de nom, tu peux m'appeler Bot!
+quel est ton nom,quel nom|Je n'ai pas de nom précis, tu peux m'appeler Bot!
+blague,joke,rigolo|Pourquoi le plongeur plonge-t-il toujours en arrière et jamais en avant? Parce que sinon il tomberait dans le bateau!
+météo,weather|Je ne peux pas accéder à la météo, désolé!
+heure,time,quelle heure|Je n'ai pas accès à l'heure en temps réel
