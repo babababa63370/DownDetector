@@ -5,7 +5,6 @@ from config import DISCORD_TOKEN, SUPABASE_URL, SUPABASE_KEY
 from supabase import create_client
 
 intents = discord.Intents.default()
-intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
