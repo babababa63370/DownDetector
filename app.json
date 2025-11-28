@@ -1,23 +1,16 @@
 {
   "expo": {
-    "name": "Mobile App",
+    "name": "Ma Premier App",
     "slug": "mobile-app",
     "version": "1.0.0",
+    "platforms": ["android"],
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTabletMode": true
-    },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static"
+      "package": "com.myapp.mobilapp",
+      "versionCode": 1,
+      "permissions": []
     }
   }
 }
