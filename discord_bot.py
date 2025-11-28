@@ -116,6 +116,25 @@ async def list_services(interaction: discord.Interaction):
     except Exception as e:
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
+async def autocomplete_service_name(
+    interaction: discord.Interaction,
+    current: str,
+) -> list:
+    """Autocomplete pour les noms de services"""
+    if not get_supabase():
+        return []
+    
+    try:
+        services = get_supabase().table("services").select("name").eq("owner_id", str(interaction.user.id)).execute()
+        names = [s["name"] for s in services.data] if services.data else []
+        return [
+            discord.app_commands.Choice(name=name, value=name)
+            for name in names
+            if current.lower() in name.lower()
+        ][:25]
+    except Exception:
+        return []
+
 @bot.tree.command(name="remove_service", description="Supprime un service")
 async def remove_service(interaction: discord.Interaction, name: str):
     """Supprime un service"""
@@ -128,6 +147,13 @@ async def remove_service(interaction: discord.Interaction, name: str):
         await interaction.response.send_message(f"✅ Service '{name}' supprimé")
     except Exception as e:
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
+
+@remove_service.autocomplete("name")
+async def remove_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list:
+    return await autocomplete_service_name(interaction, current)
 
 @bot.tree.command(name="graph", description="Affiche les stats et graphique d'un service")
 async def show_graph(interaction: discord.Interaction, name: str):
@@ -209,6 +235,13 @@ async def show_graph(interaction: discord.Interaction, name: str):
     except Exception as e:
         print(f"Erreur graph: {e}")
         await interaction.response.send_message(f"❌ Erreur: {str(e)}")
+
+@show_graph.autocomplete("name")
+async def graph_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list:
+    return await autocomplete_service_name(interaction, current)
 
 @bot.tree.command(name="config_ping", description="Configure l'intervalle de ping (owner only)")
 async def config_ping(interaction: discord.Interaction, interval: int):
