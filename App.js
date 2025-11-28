@@ -1,6 +1,5 @@
-import { StatusBar } from 'expo-status-bar';
+import { Text, View, Button, StyleSheet } from 'react-native';
 import { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 
 export default function App() {
   const [count, setCount] = useState(0);
@@ -9,13 +8,7 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>Ma Premier App</Text>
       <Text style={styles.count}>{count}</Text>
-      <TouchableOpacity 
-        style={styles.button}
-        onPress={() => setCount(count + 1)}
-      >
-        <Text style={styles.buttonText}>Appuyez-moi</Text>
-      </TouchableOpacity>
-      <StatusBar style="auto" />
+      <Button title="Appuyez-moi" onPress={() => setCount(count + 1)} />
     </View>
   );
 }
@@ -23,30 +16,18 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   count: {
     fontSize: 60,
     fontWeight: 'bold',
     color: '#007AFF',
-    marginBottom: 30,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    marginBottom: 20,
   },
 });

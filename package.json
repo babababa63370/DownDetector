@@ -1,20 +1,14 @@
 {
   "name": "mobile-app",
   "version": "1.0.0",
-  "description": "Application mobile Android native",
-  "main": "index.js",
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "build": "eas build --platform android"
+    "android": "expo start --android"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "react": "18.2.0",
-    "react-native": "0.73.6",
     "expo": "~50.0.20",
-    "expo-status-bar": "~1.11.1"
+    "react": "18.2.0",
+    "react-native": "0.73.6"
   }
 }

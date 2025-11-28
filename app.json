@@ -3,11 +3,6 @@
     "name": "Ma Premier App",
     "slug": "mobile-app",
     "version": "1.0.0",
-    "platforms": ["android"],
-    "assetBundlePatterns": ["**/*"],
-    "android": {
-      "package": "com.myapp.mobilapp",
-      "versionCode": 1
-    }
+    "platforms": ["android"]
   }
 }
