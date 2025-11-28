@@ -72,7 +72,7 @@ async def on_ready():
 @bot.tree.command(name="add_service", description="Ajoute un service à monitorer")
 async def add_service(interaction: discord.Interaction, url: str, name: str):
     """Ajoute un service à monitorer"""
-    if not supabase:
+    if not get_supabase():
         await interaction.response.send_message("❌ Erreur: Supabase non configuré")
         return
     
@@ -91,7 +91,7 @@ async def add_service(interaction: discord.Interaction, url: str, name: str):
 @bot.tree.command(name="list_services", description="Liste les services monitorés")
 async def list_services(interaction: discord.Interaction):
     """Liste les services"""
-    if not supabase:
+    if not get_supabase():
         await interaction.response.send_message("❌ Erreur: Supabase non configuré")
         return
     
@@ -119,7 +119,7 @@ async def list_services(interaction: discord.Interaction):
 @bot.tree.command(name="remove_service", description="Supprime un service")
 async def remove_service(interaction: discord.Interaction, name: str):
     """Supprime un service"""
-    if not supabase:
+    if not get_supabase():
         await interaction.response.send_message("❌ Erreur: Supabase non configuré")
         return
     
@@ -132,7 +132,7 @@ async def remove_service(interaction: discord.Interaction, name: str):
 @bot.tree.command(name="graph", description="Affiche les stats et graphique d'un service")
 async def show_graph(interaction: discord.Interaction, name: str):
     """Affiche les stats d'un service avec lien vers graphique interactif"""
-    if not supabase:
+    if not get_supabase():
         await interaction.response.send_message("❌ Erreur: Supabase non configuré")
         return
     
@@ -239,7 +239,7 @@ async def config_ping(interaction: discord.Interaction, interval: int):
 @tasks.loop(minutes=5)  # Default 5 minutes, can be changed with /config_ping
 async def check_services():
     """Vérifie le statut des services toutes les 5 minutes"""
-    if not supabase:
+    if not get_supabase():
         return
     
     try:
