@@ -3,6 +3,10 @@
     "name": "Ma Premier App",
     "slug": "mobile-app",
     "version": "1.0.0",
-    "platforms": ["android"]
+    "platforms": ["android"],
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "enabled": false
+    }
   }
 }
