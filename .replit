@@ -34,7 +34,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd /home/runner/workspace && expo start --web"
+args = "cd /home/runner/workspace && npx expo start --web --localhost"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
