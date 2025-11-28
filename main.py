@@ -1,13 +1,9 @@
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.core.window import Window
 
-Window.size = (400, 600)
-
-class MonApp(App):
+class MonAppApp(App):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.count = 0
@@ -35,4 +31,4 @@ class MonApp(App):
         self.counter_label.text = str(self.count)
 
 if __name__ == '__main__':
-    MonApp().run()
+    MonAppApp().run()
