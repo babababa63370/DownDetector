@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot avec Règles</title>
+    <title>Jeux Amusants</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh;
             display: flex;
@@ -24,207 +24,179 @@
         .container {
             background: white;
             border-radius: 15px;
+            padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            width: 100%;
             max-width: 500px;
-            height: 90vh;
-            max-height: 600px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            width: 100%;
         }
         
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
+        h1 {
             text-align: center;
-            border-bottom: 3px solid #667eea;
+            color: #667eea;
+            margin-bottom: 30px;
         }
         
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
+        .menu {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
         }
         
-        .header p {
-            font-size: 12px;
-            opacity: 0.9;
-        }
-        
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .message.user {
-            justify-content: flex-end;
-        }
-        
-        .message.bot {
-            justify-content: flex-start;
-        }
-        
-        .message-content {
-            max-width: 70%;
-            padding: 12px 15px;
-            border-radius: 15px;
-            word-wrap: break-word;
-            font-size: 14px;
-        }
-        
-        .user .message-content {
-            background: #667eea;
-            color: white;
-            border-bottom-right-radius: 5px;
-        }
-        
-        .bot .message-content {
-            background: #e0e0e0;
-            color: #333;
-            border-bottom-left-radius: 5px;
-        }
-        
-        .input-area {
+        .btn {
             padding: 15px;
-            background: white;
-            border-top: 1px solid #ddd;
-            display: flex;
-            gap: 10px;
-        }
-        
-        input {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 25px;
-            font-size: 14px;
-            outline: none;
-            transition: border 0.3s;
-        }
-        
-        input:focus {
-            border-color: #667eea;
-        }
-        
-        button {
-            padding: 12px 25px;
-            background: #667eea;
-            color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 10px;
             cursor: pointer;
+            font-size: 16px;
             font-weight: bold;
-            transition: background 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         
-        button:hover {
-            background: #764ba2;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
         
-        button:active {
-            transform: scale(0.95);
-        }
+        .btn1 { background: #FF6B6B; color: white; }
+        .btn2 { background: #4ECDC4; color: white; }
+        .btn3 { background: #FFE66D; color: #333; }
+        .btn4 { background: #95E1D3; color: white; }
         
-        .info {
-            font-size: 11px;
+        .game {
+            display: none;
             text-align: center;
-            color: #999;
-            margin-top: 10px;
-            padding: 0 10px;
+        }
+        
+        .game.active {
+            display: block;
+        }
+        
+        .result {
+            font-size: 48px;
+            margin: 30px 0;
+            font-weight: bold;
+        }
+        
+        .back-btn {
+            background: #999;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🤖 Chatbot</h1>
-            <p>Avec règles personnalisées</p>
+        <h1>🎮 Jeux Amusants</h1>
+        
+        <!-- Menu -->
+        <div id="menu" class="menu">
+            <button class="btn btn1" onclick="startGame('dice')">🎲 Dés</button>
+            <button class="btn btn2" onclick="startGame('coin')">🪙 Pile/Face</button>
+            <button class="btn btn3" onclick="startGame('rock')">✂️ Pierre/Papier/Ciseaux</button>
+            <button class="btn btn4" onclick="startGame('quotes')">💭 Citations</button>
         </div>
         
-        <div class="messages" id="messages">
-            <div class="message bot">
-                <div class="message-content">Bonjour! Je suis un chatbot. Essaie de me parler! 👋</div>
+        <!-- Jeu des dés -->
+        <div id="dice" class="game">
+            <h2>🎲 Lance les Dés!</h2>
+            <button class="btn btn1" onclick="rollDice()">Lancer</button>
+            <div class="result" id="diceResult">?</div>
+            <button class="back-btn" onclick="backToMenu()">← Retour</button>
+        </div>
+        
+        <!-- Pile/Face -->
+        <div id="coin" class="game">
+            <h2>🪙 Pile ou Face?</h2>
+            <button class="btn btn2" onclick="flipCoin()">Lancer la Pièce</button>
+            <div class="result" id="coinResult">?</div>
+            <button class="back-btn" onclick="backToMenu()">← Retour</button>
+        </div>
+        
+        <!-- Pierre/Papier/Ciseaux -->
+        <div id="rock" class="game">
+            <h2>✂️ Pierre/Papier/Ciseaux</h2>
+            <div style="margin: 20px 0;">
+                <button class="btn btn3" onclick="playRock('rock')" style="margin: 5px;">🪨 Pierre</button>
+                <button class="btn btn3" onclick="playRock('paper')" style="margin: 5px;">📄 Papier</button>
+                <button class="btn btn3" onclick="playRock('scissors')" style="margin: 5px;">✂️ Ciseaux</button>
             </div>
+            <div id="rockResult" style="font-size: 24px; margin: 20px 0;"></div>
+            <button class="back-btn" onclick="backToMenu()">← Retour</button>
         </div>
         
-        <div class="input-area">
-            <input 
-                type="text" 
-                id="input" 
-                placeholder="Écris quelque chose..."
-                autocomplete="off"
-            >
-            <button onclick="envoyerMessage()">Envoyer</button>
-        </div>
-        
-        <div class="info">
-            ℹ️ Modifie regle.txt pour ajouter des règles
+        <!-- Citations -->
+        <div id="quotes" class="game">
+            <h2>💭 Citation du Jour</h2>
+            <div id="quoteText" style="font-size: 18px; font-style: italic; margin: 30px 0; line-height: 1.6;"></div>
+            <button class="btn btn4" onclick="showQuote()">Nouvelle Citation</button>
+            <button class="back-btn" onclick="backToMenu()">← Retour</button>
         </div>
     </div>
     
     <script>
-        const input = document.getElementById('input');
-        const messagesDiv = document.getElementById('messages');
+        const quotes = [
+            "La vie est belle quand on la regarde du bon côté! 🌟",
+            "Les erreurs sont des opportunités d'apprentissage! 📚",
+            "Chaque jour est une nouvelle chance! ☀️",
+            "Tu es plus fort que tu ne le penses! 💪",
+            "La persévérance paie toujours! 🏆",
+            "Sois toi-même, c'est déjà parfait! 😊",
+            "Le rire est le meilleur des remèdes! 😄",
+            "Tu peux faire tout ce que tu veux! 🚀"
+        ];
         
-        function ajouterMessage(texte, type) {
-            const div = document.createElement('div');
-            div.className = `message ${type}`;
-            div.innerHTML = `<div class="message-content">${texte}</div>`;
-            messagesDiv.appendChild(div);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        function startGame(game) {
+            document.getElementById('menu').style.display = 'none';
+            document.querySelectorAll('.game').forEach(g => g.classList.remove('active'));
+            document.getElementById(game).classList.add('active');
+            
+            if (game === 'quotes') showQuote();
         }
         
-        async function envoyerMessage() {
-            const message = input.value.trim();
-            if (!message) return;
-            
-            ajouterMessage(message, 'user');
-            input.value = '';
-            
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-                
-                const data = await response.json();
-                ajouterMessage(data.reponse, 'bot');
-            } catch (error) {
-                ajouterMessage('Erreur de connexion...', 'bot');
-            }
+        function backToMenu() {
+            document.querySelectorAll('.game').forEach(g => g.classList.remove('active'));
+            document.getElementById('menu').style.display = 'grid';
         }
         
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                envoyerMessage();
-            }
-        });
+        function rollDice() {
+            const result = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('diceResult').textContent = result;
+        }
         
-        // Focus sur l'input
-        input.focus();
+        function flipCoin() {
+            const result = Math.random() < 0.5 ? 'Pile 🪙' : 'Face 🪙';
+            document.getElementById('coinResult').textContent = result;
+        }
+        
+        function playRock(choice) {
+            const choices = ['rock', 'paper', 'scissors'];
+            const computer = choices[Math.floor(Math.random() * 3)];
+            const emojis = { rock: '🪨', paper: '📄', scissors: '✂️' };
+            
+            let result;
+            if (choice === computer) {
+                result = `Égalité! Ordinateur a choisi ${emojis[computer]}`;
+            } else if (
+                (choice === 'rock' && computer === 'scissors') ||
+                (choice === 'paper' && computer === 'rock') ||
+                (choice === 'scissors' && computer === 'paper')
+            ) {
+                result = `Tu as gagné! 🎉 Ordinateur a choisi ${emojis[computer]}`;
+            } else {
+                result = `Tu as perdu! 😅 Ordinateur a choisi ${emojis[computer]}`;
+            }
+            document.getElementById('rockResult').textContent = result;
+        }
+        
+        function showQuote() {
+            const quote = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('quoteText').textContent = `"${quote}"`;
+        }
     </script>
 </body>
 </html>

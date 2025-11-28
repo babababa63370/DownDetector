@@ -26,31 +26,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Default"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Chatbot"
+args = "Jeux"
 
 [[workflows.workflow]]
-name = "Default"
+name = "Jeux"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd /home/runner/workspace && python -m http.server 5000"
-waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow]]
-name = "Chatbot"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace && python chatbot.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
