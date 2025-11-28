@@ -121,11 +121,3 @@ async def check_services():
 @check_services.before_loop
 async def before_check():
     await bot.wait_until_ready()
-
-def start_bot():
-    """Lance le bot Discord dans un thread"""
-    import threading
-    if DISCORD_TOKEN:
-        thread = threading.Thread(target=lambda: bot.run(DISCORD_TOKEN), daemon=True)
-        thread.start()
-        print("🤖 Bot Discord lancé en arrière-plan...")

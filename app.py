@@ -1,21 +1,13 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from config import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SECRET_KEY, SUPABASE_URL, SUPABASE_KEY, DISCORD_TOKEN
 from supabase import create_client
-from discord_bot import start_bot
+from discord_bot import bot
 import requests
 from functools import wraps
 import os
-import threading
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-
-# Lancer le bot Discord en arrière-plan au démarrage
-@app.before_request
-def start_bot_once():
-    if not hasattr(app, 'bot_started'):
-        start_bot()
-        app.bot_started = True
 
 # Discord OAuth
 DISCORD_OAUTH_URL = "https://discord.com/api/oauth2/authorize"
@@ -52,7 +44,6 @@ def callback():
         return redirect(url_for('index'))
     
     try:
-        # Échanger le code pour un token
         resp = requests.post(DISCORD_TOKEN_URL, data={
             'client_id': DISCORD_CLIENT_ID,
             'client_secret': DISCORD_CLIENT_SECRET,
@@ -64,7 +55,6 @@ def callback():
         token_data = resp.json()
         access_token = token_data.get('access_token')
         
-        # Récupérer les infos de l'utilisateur
         user_resp = requests.get(
             f"{DISCORD_API_URL}/users/@me",
             headers={'Authorization': f'Bearer {access_token}'}
@@ -90,7 +80,6 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-# API Endpoints
 @app.route('/api/services', methods=['GET'])
 @require_login
 def get_services():
@@ -140,7 +129,6 @@ def delete_service(service_id):
 
 @app.route('/api/status')
 def api_status():
-    """État global des services"""
     if not supabase:
         return jsonify({'online': 0, 'down': 0, 'total': 0})
     
@@ -160,5 +148,10 @@ def api_status():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    start_bot()
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    if DISCORD_TOKEN:
+        print("🤖 Bot Discord lancé en arrière-plan...")
+        import threading
+        bot_thread = threading.Thread(target=lambda: bot.run(DISCORD_TOKEN), daemon=True)
+        bot_thread.start()
+    
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)
