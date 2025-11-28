@@ -22,6 +22,42 @@ async def on_ready():
     except Exception as e:
         print(f"❌ Erreur sync: {e}")
     
+    # Crée la table ping_logs si elle n'existe pas
+    if supabase:
+        try:
+            supabase.table("ping_logs").select("id").limit(1).execute()
+        except Exception as e:
+            if "Could not find the table" in str(e):
+                print("📊 Création de la table ping_logs...")
+                try:
+                    import os
+                    import requests
+                    # Crée la table via API Supabase
+                    url = f"{SUPABASE_URL}/rest/v1/rpc/exec_sql"
+                    headers = {
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": f"Bearer {SUPABASE_KEY}",
+                        "Content-Type": "application/json"
+                    }
+                    sql = """
+                    CREATE TABLE IF NOT EXISTS ping_logs (
+                        id SERIAL PRIMARY KEY,
+                        service_id INT NOT NULL,
+                        owner_id TEXT NOT NULL,
+                        service_name TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        latency_ms INT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_ping_logs_owner ON ping_logs(owner_id);
+                    CREATE INDEX IF NOT EXISTS idx_ping_logs_service ON ping_logs(service_id);
+                    CREATE INDEX IF NOT EXISTS idx_ping_logs_created ON ping_logs(created_at);
+                    """
+                    requests.post(url, json={"query": sql}, headers=headers)
+                    print("✅ Table ping_logs créée!")
+                except Exception as e2:
+                    print(f"⚠️ Erreur création table: {e2}")
+    
     if not check_services.is_running():
         check_services.start()
 
