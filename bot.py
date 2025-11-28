@@ -2,15 +2,16 @@ import discord
 from discord.ext import commands, tasks
 import aiohttp
 from config import DISCORD_TOKEN, SUPABASE_URL, SUPABASE_KEY
-import asyncio
+from supabase import create_client
 from datetime import datetime
+from typing import Optional
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Stockage en mémoire (remplacé par Supabase)
-monitored_services = {}
+# Supabase
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
 
 @bot.event
 async def on_ready():
@@ -20,59 +21,84 @@ async def on_ready():
 @bot.tree.command(name="add_service", description="Ajoute un service à monitorer")
 async def add_service(interaction: discord.Interaction, url: str, name: str):
     """Ajoute un service à monitorer"""
-    guild_id = interaction.guild_id
-    if guild_id not in monitored_services:
-        monitored_services[guild_id] = []
+    if not supabase:
+        await interaction.response.send_message("❌ Erreur: Supabase non configuré")
+        return
     
-    monitored_services[guild_id].append({"url": url, "name": name, "status": "online"})
-    
-    await interaction.response.send_message(f"✅ Service '{name}' ajouté: {url}")
+    try:
+        supabase.table("services").insert({
+            "guild_id": interaction.guild_id,
+            "name": name,
+            "url": url,
+            "status": "online",
+            "owner_id": interaction.user.id
+        }).execute()
+        await interaction.response.send_message(f"✅ Service '{name}' ajouté: {url}")
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
 @bot.tree.command(name="list_services", description="Liste les services monitorés")
 async def list_services(interaction: discord.Interaction):
     """Liste les services"""
-    guild_id = interaction.guild_id
-    if guild_id not in monitored_services or not monitored_services[guild_id]:
-        await interaction.response.send_message("❌ Aucun service configuré")
+    if not supabase:
+        await interaction.response.send_message("❌ Erreur: Supabase non configuré")
         return
     
-    services = monitored_services[guild_id]
-    embed = discord.Embed(title="🔍 Services Monitorés", color=discord.Color.blue())
-    for i, service in enumerate(services, 1):
-        status_emoji = "🟢" if service["status"] == "online" else "🔴"
-        embed.add_field(
-            name=f"{i}. {service['name']}",
-            value=f"{status_emoji} {service['url']}",
-            inline=False
-        )
-    
-    await interaction.response.send_message(embed=embed)
+    try:
+        response = supabase.table("services").select("*").eq("guild_id", interaction.guild_id).execute()
+        services = response.data
+        
+        if not services:
+            await interaction.response.send_message("❌ Aucun service configuré")
+            return
+        
+        embed = discord.Embed(title="🔍 Services Monitorés", color=discord.Color.blue())
+        for i, service in enumerate(services, 1):
+            status_emoji = "🟢" if service.get("status") == "online" else "🔴"
+            embed.add_field(
+                name=f"{i}. {service['name']}",
+                value=f"{status_emoji} {service['url']}",
+                inline=False
+            )
+        
+        await interaction.response.send_message(embed=embed)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
 @bot.tree.command(name="remove_service", description="Supprime un service")
 async def remove_service(interaction: discord.Interaction, name: str):
     """Supprime un service"""
-    guild_id = interaction.guild_id
-    if guild_id in monitored_services:
-        monitored_services[guild_id] = [s for s in monitored_services[guild_id] if s["name"] != name]
+    if not supabase:
+        await interaction.response.send_message("❌ Erreur: Supabase non configuré")
+        return
+    
+    try:
+        supabase.table("services").delete().eq("guild_id", interaction.guild_id).eq("name", name).execute()
         await interaction.response.send_message(f"✅ Service '{name}' supprimé")
-    else:
-        await interaction.response.send_message("❌ Service non trouvé")
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Erreur: {str(e)}")
 
 @tasks.loop(minutes=5)
 async def check_services():
     """Vérifie le statut des services toutes les 5 minutes"""
-    for guild_id, services in monitored_services.items():
-        for service in services:
+    if not supabase:
+        return
+    
+    try:
+        response = supabase.table("services").select("*").execute()
+        all_services = response.data
+        
+        for service in all_services:
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(service["url"], timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                        old_status = service["status"]
+                        old_status = service.get("status")
                         new_status = "online" if resp.status == 200 else "down"
-                        service["status"] = new_status
                         
-                        # Notifier si changement de statut
+                        supabase.table("services").update({"status": new_status}).eq("id", service["id"]).execute()
+                        
                         if old_status != new_status:
-                            guild = bot.get_guild(guild_id)
+                            guild = bot.get_guild(service["guild_id"])
                             if guild:
                                 for channel in guild.text_channels:
                                     try:
@@ -81,17 +107,17 @@ async def check_services():
                                             f"{emoji} **{service['name']}** est maintenant **{new_status.upper()}**"
                                         )
                                         break
-                                    except:
+                                    except Exception:
                                         continue
             except Exception as e:
-                service["status"] = "down"
                 print(f"Erreur lors du check de {service['name']}: {e}")
+    except Exception as e:
+        print(f"Erreur check_services: {e}")
 
 @check_services.before_loop
 async def before_check():
     await bot.wait_until_ready()
 
-# Synchroniser les commandes
 @bot.event
 async def on_ready():
     print(f"✅ Bot prêt: {bot.user}")
@@ -101,7 +127,8 @@ async def on_ready():
     except Exception as e:
         print(f"❌ Erreur sync: {e}")
     
-    check_services.start()
+    if not check_services.is_running():
+        check_services.start()
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
