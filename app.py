@@ -14,26 +14,21 @@ DISCORD_API_URL = "https://discord.com/api"
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# Lazy initialization de Supabase
-_supabase_client = None
+# Supabase REST API headers
+SUPABASE_HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json"
+}
 
-def get_supabase():
-    global _supabase_client
-    if _supabase_client is None:
-        if SUPABASE_URL and SUPABASE_KEY:
-            try:
-                from supabase import create_client
-                _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-            except Exception as e:
-                print(f"⚠️ Supabase init error (non-critical): {e}")
-                _supabase_client = None
-    return _supabase_client
-
-# Stockage en mémoire des utilisateurs (en dev)
-users_db = {}
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+def query_supabase(table, query=""):
+    """Simple REST API call to Supabase"""
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/{table}{query}"
+        resp = requests.get(url, headers=SUPABASE_HEADERS, timeout=5)
+        return resp.json() if resp.status_code == 200 else []
+    except:
+        return []
 
 def require_login(f):
     @wraps(f)
@@ -74,11 +69,9 @@ def callback_discord():
         
         token_data = resp.json()
         if 'error' in token_data:
-            print(f"Discord error: {token_data}")
             return redirect(url_for('index'))
         
         access_token = token_data.get('access_token')
-        
         user_resp = requests.get(
             f"{DISCORD_API_URL}/users/@me",
             headers={'Authorization': f'Bearer {access_token}'}
@@ -86,71 +79,24 @@ def callback_discord():
         user_data = user_resp.json()
         
         if 'error' in user_data:
-            print(f"Discord user error: {user_data}")
             return redirect(url_for('index'))
         
         session['user_id'] = user_data['id']
         session['username'] = user_data['username']
         session['email'] = user_data.get('email')
         
-        # Récupère l'avatar Discord avec le bon format
+        # Avatar
         avatar_hash = user_data.get('avatar')
-        print(f"DEBUG: Avatar data: {avatar_hash}, User ID: {user_data['id']}")
-        
         if avatar_hash:
-            # Détecte si c'est un animated avatar (gif) ou static (png)
             avatar_format = "gif" if avatar_hash.startswith("a_") else "png"
             session['avatar_url'] = f"https://cdn.discordapp.com/avatars/{user_data['id']}/{avatar_hash}.{avatar_format}?size=256"
         else:
-            # Avatar par défaut basé sur discriminator
             session['avatar_url'] = f"https://cdn.discordapp.com/embed/avatars/{int(user_data['id']) % 5}.png"
         
-        print(f"DEBUG: Avatar URL: {session['avatar_url']}")
         return redirect(url_for('dashboard'))
     except Exception as e:
         print(f"Discord callback error: {e}")
         return redirect(url_for('index'))
-
-@app.route('/api/register', methods=['POST'])
-def register():
-    data = request.json
-    username = data.get('username', '').strip()
-    email = data.get('email', '').strip()
-    password = data.get('password', '')
-    
-    if not username or not email or not password:
-        return jsonify({'error': 'Tous les champs sont requis'}), 400
-    
-    if username in users_db:
-        return jsonify({'error': 'Ce nom d\'utilisateur existe déjà'}), 400
-    
-    users_db[username] = {
-        'email': email,
-        'password': hash_password(password)
-    }
-    
-    return jsonify({'success': True}), 201
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    username = data.get('username', '').strip()
-    password = data.get('password', '')
-    
-    if username not in users_db:
-        return jsonify({'error': 'Utilisateur ou mot de passe incorrect'}), 401
-    
-    user = users_db[username]
-    if user['password'] != hash_password(password):
-        return jsonify({'error': 'Utilisateur ou mot de passe incorrect'}), 401
-    
-    session['user_id'] = username
-    session['username'] = username
-    session['email'] = user['email']
-    # Avatar par défaut pour connexion simple
-    session['avatar_url'] = "https://cdn.discordapp.com/embed/avatars/0.png"
-    
-    return jsonify({'success': True}), 200
 
 @app.route('/dashboard')
 @require_login
@@ -165,48 +111,46 @@ def logout():
 @app.route('/api/services', methods=['GET'])
 @require_login
 def get_services():
-    if not get_supabase():
-        return jsonify([]), 200
-    
     try:
         user_id = session['user_id']
-        response = get_supabase().table("services").select("*").eq("owner_id", user_id).execute()
-        return jsonify(response.data)
+        services = query_supabase("services", f"?owner_id=eq.{user_id}")
+        return jsonify(services), 200
     except Exception as e:
-        print(f"Erreur get_services: {e}")
         return jsonify([]), 200
 
 @app.route('/api/services', methods=['POST'])
 @require_login
 def add_service():
-    if not get_supabase():
-        return jsonify({"error": "Supabase non configuré"}), 500
-    
     try:
         user_id = session['user_id']
         data = request.json
         
-        response = get_supabase().table("services").insert({
-            'name': data.get('name'),
-            'url': data.get('url'),
-            'status': 'online',
-            'owner_id': user_id,
-            'guild_id': 0
-        }).execute()
+        resp = requests.post(
+            f"{SUPABASE_URL}/rest/v1/services",
+            json={
+                'name': data.get('name'),
+                'url': data.get('url'),
+                'status': 'online',
+                'owner_id': user_id,
+                'guild_id': 0
+            },
+            headers=SUPABASE_HEADERS,
+            timeout=5
+        )
         
-        return jsonify(response.data[0] if response.data else {}), 201
+        return jsonify(resp.json()[0] if resp.json() else {}), 201
     except Exception as e:
-        print(f"Erreur add_service: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/services/<int:service_id>', methods=['DELETE'])
 @require_login
 def delete_service(service_id):
-    if not get_supabase():
-        return jsonify({"error": "Supabase non configuré"}), 500
-    
     try:
-        get_supabase().table("services").delete().eq("id", service_id).execute()
+        requests.delete(
+            f"{SUPABASE_URL}/rest/v1/services?id=eq.{service_id}",
+            headers=SUPABASE_HEADERS,
+            timeout=5
+        )
         return jsonify({'status': 'deleted'}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -214,9 +158,7 @@ def delete_service(service_id):
 @app.route('/api/user')
 @require_login
 def get_user():
-    avatar_url = session.get('avatar_url')
-    if not avatar_url:
-        avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
+    avatar_url = session.get('avatar_url', "https://cdn.discordapp.com/embed/avatars/0.png")
     return jsonify({
         'username': session.get('username'),
         'avatar_url': avatar_url
@@ -224,68 +166,27 @@ def get_user():
 
 @app.route('/api/status')
 def api_status():
-    if not get_supabase():
-        return jsonify({'online': 0, 'down': 0, 'total': 0})
-    
     try:
-        response = get_supabase().table("services").select("status").execute()
-        all_services = response.data
-        
-        online = sum(1 for s in all_services if s.get('status') == 'online')
-        down = sum(1 for s in all_services if s.get('status') == 'down')
-        
+        services = query_supabase("services", "?select=status")
+        online = sum(1 for s in services if s.get('status') == 'online')
+        down = sum(1 for s in services if s.get('status') == 'down')
         return jsonify({
             'online': online,
             'down': down,
-            'total': len(all_services)
+            'total': len(services)
         })
-    except Exception as e:
+    except:
         return jsonify({'online': 0, 'down': 0, 'total': 0})
 
 @app.route('/api/logs/<int:service_id>')
 @require_login
 def get_logs(service_id):
-    if not get_supabase():
-        return jsonify([]), 200
-    
     try:
-        # Récupère les 100 derniers logs pour un service
-        response = get_supabase().table("ping_logs").select("*").eq("service_id", service_id).order("created_at", desc=True).limit(100).execute()
-        logs = response.data[::-1]  # Inverse pour avoir du plus ancien au plus récent
-        
-        # Si pas de logs, ajoute des données de test
-        if len(logs) == 0:
-            import random
-            from datetime import datetime, timedelta
-            test_logs = []
-            for i in range(20):
-                test_logs.append({
-                    "service_id": service_id,
-                    "owner_id": session['user_id'],
-                    "service_name": "Test Data",
-                    "status": "online" if random.random() > 0.1 else "down",
-                    "latency_ms": random.randint(50, 500),
-                    "created_at": (datetime.now() - timedelta(minutes=i*2)).isoformat()
-                })
-            logs = test_logs[::-1]
-        
-        return jsonify(logs)
+        logs = query_supabase("ping_logs", f"?service_id=eq.{service_id}&order=created_at.desc&limit=100")
+        return jsonify(logs[::-1])
     except Exception as e:
         print(f"Erreur get_logs: {e}")
-        # Retourne des données de test en cas d'erreur
-        import random
-        from datetime import datetime, timedelta
-        test_logs = []
-        for i in range(20):
-            test_logs.append({
-                "service_id": service_id,
-                "owner_id": session['user_id'],
-                "service_name": "Test Data",
-                "status": "online" if random.random() > 0.1 else "down",
-                "latency_ms": random.randint(50, 500),
-                "created_at": (datetime.now() - timedelta(minutes=i*2)).isoformat()
-            })
-        return jsonify(test_logs[::-1])
+        return jsonify([])
 
 if __name__ == '__main__':
     if DISCORD_TOKEN:
