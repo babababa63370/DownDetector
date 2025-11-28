@@ -136,6 +136,8 @@ def login():
     session['user_id'] = username
     session['username'] = username
     session['email'] = user['email']
+    # Avatar par défaut pour connexion simple
+    session['avatar_url'] = "https://cdn.discordapp.com/embed/avatars/0.png"
     
     return jsonify({'success': True}), 200
 
