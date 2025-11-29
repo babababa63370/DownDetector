@@ -196,14 +196,14 @@ def manual_ping(service_id):
             return jsonify({'error': 'Service not found'}), 404
         
         service = services[0]
-        if service['owner_id'] != session['user_id']:
+        if str(service['owner_id']) != str(session['user_id']):
             return jsonify({'error': 'Unauthorized'}), 403
         
         import time
         start_time = time.time()
         resp = requests.get(service['url'], timeout=5)
         latency_ms = int((time.time() - start_time) * 1000)
-        new_status = "online" if resp.status == 200 else "down"
+        new_status = "online" if resp.status_code == 200 else "down"
         
         # Enregistre le log
         log_resp = requests.post(
