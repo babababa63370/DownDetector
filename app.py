@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
-from config import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SECRET_KEY, SUPABASE_URL, SUPABASE_KEY, DISCORD_TOKEN, get_db_connection
+from config import DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SECRET_KEY, SUPABASE_URL, SUPABASE_KEY, DISCORD_TOKEN
 from discord_bot import bot
 import requests
 from functools import wraps
@@ -205,23 +205,27 @@ def manual_ping(service_id):
         latency_ms = int((time.time() - start_time) * 1000)
         new_status = "online" if resp.status_code == 200 else "down"
         
-        # Enregistre le log directement via PostgreSQL
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO ping_logs (service_id, owner_id, service_name, status, latency_ms) VALUES (%s, %s, %s, %s, %s)",
-            (service_id, session['user_id'], service['name'], new_status, latency_ms)
+        # Enregistre le log via REST API
+        log_resp = requests.post(
+            f"{SUPABASE_URL}/rest/v1/ping_logs",
+            json={
+                "service_id": service_id,
+                "owner_id": session['user_id'],
+                "service_name": service['name'],
+                "status": new_status,
+                "latency_ms": latency_ms
+            },
+            headers=SUPABASE_HEADERS,
+            timeout=5
         )
         
-        # Update service status
-        cursor.execute(
-            "UPDATE services SET status = %s WHERE id = %s",
-            (new_status, service_id)
+        # Update status
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/services?id=eq.{service_id}",
+            json={"status": new_status},
+            headers=SUPABASE_HEADERS,
+            timeout=5
         )
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
         
         return jsonify({
             'status': new_status,
