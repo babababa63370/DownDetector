@@ -4,6 +4,9 @@ import aiohttp
 import asyncio
 import requests
 from config import DISCORD_TOKEN, SUPABASE_URL, SUPABASE_KEY
+from PIL import Image, ImageDraw, ImageFont
+import io
+from datetime import datetime, timedelta
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -145,6 +148,113 @@ async def config_ping(interaction: discord.Interaction, interval: int):
     
     check_services.change_interval(minutes=interval/60)
     await interaction.response.send_message(f"✅ Intervalle de ping configuré à **{interval} secondes**")
+
+def create_graph_image(service_name, logs):
+    """Crée une image du graphique avec Pillow"""
+    if not logs:
+        logs = []
+    
+    # Paramètres du graphique
+    width, height = 800, 400
+    padding = 50
+    graph_width = width - 2 * padding
+    graph_height = height - 2 * padding
+    
+    # Créer l'image
+    img = Image.new('RGB', (width, height), color=(36, 37, 38))
+    draw = ImageDraw.Draw(img)
+    
+    # Titre
+    title = f"Graphique de latence: {service_name}"
+    draw.text((padding, 10), title, fill=(88, 101, 242))
+    
+    # Axes
+    draw.rectangle([padding, padding, padding + graph_width, padding + graph_height], outline=(150, 150, 150))
+    
+    # Pas de logs
+    if not logs or len(logs) < 2:
+        draw.text((padding + 100, padding + 150), "Pas assez de données", fill=(200, 200, 200))
+        return img
+    
+    # Extraire les latences
+    latencies = [log.get("latency_ms", 0) or 0 for log in logs]
+    if max(latencies) == 0:
+        draw.text((padding + 100, padding + 150), "Pas de données de latence", fill=(200, 200, 200))
+        return img
+    
+    max_latency = max(latencies) * 1.2  # Ajouter 20% de marge
+    
+    # Tracer la ligne
+    points = []
+    for i, latency in enumerate(latencies):
+        x = padding + (i / (len(latencies) - 1)) * graph_width if len(latencies) > 1 else padding + graph_width / 2
+        y = padding + graph_height - (latency / max_latency) * graph_height
+        points.append((x, y))
+    
+    # Dessiner les points et lignes
+    for i in range(len(points) - 1):
+        draw.line([points[i], points[i + 1]], fill=(87, 242, 135), width=2)
+    
+    for point in points:
+        draw.ellipse([point[0] - 3, point[1] - 3, point[0] + 3, point[1] + 3], fill=(87, 242, 135))
+    
+    # Labels
+    draw.text((padding - 30, padding - 20), "Latence (ms)", fill=(200, 200, 200))
+    draw.text((padding + graph_width - 50, padding + graph_height + 10), "Temps", fill=(200, 200, 200))
+    
+    # Stats
+    avg_latency = sum(latencies) / len(latencies)
+    min_latency = min(latencies)
+    max_latency_actual = max(latencies)
+    
+    stats_text = f"Moyenne: {avg_latency:.0f}ms | Min: {min_latency}ms | Max: {max_latency_actual}ms"
+    draw.text((padding, height - 25), stats_text, fill=(200, 200, 200))
+    
+    return img
+
+@bot.tree.command(name="graph", description="Affiche le graphique de latence d'un service")
+async def graph(interaction: discord.Interaction, name: str = None):
+    """Affiche le graphique de latence"""
+    await interaction.response.defer()
+    try:
+        # Récupérer les services de l'utilisateur
+        services = query_supabase("services", f"?owner_id=eq.{interaction.user.id}")
+        
+        if not services:
+            await interaction.followup.send("❌ Tu n'as pas de services")
+            return
+        
+        # Si pas de nom spécifié, prendre le premier
+        service = None
+        if name:
+            service = next((s for s in services if s["name"].lower() == name.lower()), None)
+        else:
+            service = services[0]
+        
+        if not service:
+            await interaction.followup.send(f"❌ Service '{name}' non trouvé")
+            return
+        
+        # Récupérer les logs
+        logs = query_supabase("pings", f"?service_id=eq.{service['id']}&order=created_at.asc&limit=100")
+        
+        if not logs:
+            await interaction.followup.send(f"❌ Pas de données pour '{service['name']}'")
+            return
+        
+        # Créer l'image
+        img = create_graph_image(service['name'], logs)
+        
+        # Envoyer l'image
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format='PNG')
+        img_bytes.seek(0)
+        
+        file = discord.File(img_bytes, filename="graph.png")
+        await interaction.followup.send(file=file)
+        
+    except Exception as e:
+        await interaction.followup.send(f"❌ Erreur: {str(e)}")
 
 @tasks.loop(minutes=5)
 async def check_services():
