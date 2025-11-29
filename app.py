@@ -178,15 +178,6 @@ def api_status():
     except:
         return jsonify({'online': 0, 'down': 0, 'total': 0})
 
-@app.route('/api/logs/<int:service_id>')
-@require_login
-def get_logs(service_id):
-    try:
-        logs = query_supabase("ping_logs", f"?service_id=eq.{service_id}&order=created_at.desc&limit=100")
-        return jsonify(logs[::-1])
-    except Exception as e:
-        print(f"Erreur get_logs: {e}")
-        return jsonify([])
 
 if __name__ == '__main__':
     if DISCORD_TOKEN:
