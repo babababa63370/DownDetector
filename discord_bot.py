@@ -256,6 +256,10 @@ async def graph(interaction: discord.Interaction, name: str = None):
     except Exception as e:
         await interaction.followup.send(f"❌ Erreur: {str(e)}")
 
+@graph.autocomplete("name")
+async def graph_autocomplete(interaction: discord.Interaction, current: str) -> list:
+    return await autocomplete_service_name(interaction, current)
+
 @tasks.loop(minutes=5)
 async def check_services():
     """Vérifie le statut des services"""
