@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - DownDetector</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
@@ -195,7 +196,7 @@
             margin-top: 12px;
         }
         
-        .btn-delete {
+        .btn-chart, .btn-ping, .btn-delete {
             color: white;
             padding: 10px 12px;
             border: none;
@@ -205,10 +206,59 @@
             font-size: 12px;
             font-weight: 600;
             transition: 0.3s;
+        }
+        
+        .btn-chart {
+            background: #5865f2;
+        }
+        
+        .btn-chart:hover { background: #4752c4; }
+        
+        .btn-ping {
+            background: #faa61a;
+        }
+        
+        .btn-ping:hover { background: #d49016; }
+        
+        .btn-delete {
             background: #ed4245;
         }
         
         .btn-delete:hover { background: #c03c37; }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: #0a0e27;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #5865f2;
+        }
+        
+        .stat-label {
+            color: #aaa;
+            font-size: 12px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #57f287;
+        }
         
         .modal {
             display: none;
@@ -361,8 +411,35 @@
         </div>
     </div>
     
+    <!-- Modal pour le graphique -->
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <h2 id="chartTitle">Historique des pings</h2>
+            <div class="chart-container">
+                <canvas id="pingChart"></canvas>
+            </div>
+            <div class="chart-stats">
+                <div class="stat-box">
+                    <div class="stat-label">Latence moy.</div>
+                    <div class="stat-value" id="avgLatency">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Latence max</div>
+                    <div class="stat-value" id="maxLatency">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Uptime</div>
+                    <div class="stat-value" id="uptime">-</div>
+                </div>
+            </div>
+            <button class="btn-close" onclick="closeChartModal()">Fermer</button>
+        </div>
+    </div>
+    
     
     <script>
+        let currentChart = null;
+        
         // Charge l'avatar depuis la session
         async function loadUserInfo() {
             try {
@@ -389,6 +466,86 @@
             document.body.style.overflow = '';
         }
         
+        function closeChartModal() {
+            document.getElementById('chartModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        function showChart(serviceId, serviceName) {
+            fetch(`/api/logs/${serviceId}`)
+                .then(r => r.json())
+                .then(logs => {
+                    document.getElementById('chartTitle').textContent = `Historique - ${serviceName}`;
+                    
+                    const labels = logs.map(l => {
+                        const date = new Date(l.created_at);
+                        return date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+                    });
+                    
+                    const latencies = logs.map(l => l.latency_ms || 0);
+                    const validLatencies = latencies.filter(l => l > 0);
+                    const avgLat = validLatencies.length > 0 ? Math.round(validLatencies.reduce((a, b) => a + b) / validLatencies.length) : 0;
+                    const maxLat = validLatencies.length > 0 ? Math.max(...validLatencies) : 0;
+                    const uptime = Math.round((logs.filter(l => l.status === 'online').length / logs.length) * 100);
+                    
+                    document.getElementById('avgLatency').textContent = avgLat + 'ms';
+                    document.getElementById('maxLatency').textContent = maxLat + 'ms';
+                    document.getElementById('uptime').textContent = uptime + '%';
+                    
+                    if (currentChart) currentChart.destroy();
+                    
+                    const ctx = document.getElementById('pingChart').getContext('2d');
+                    currentChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Latence (ms)',
+                                data: latencies,
+                                borderColor: '#57f287',
+                                backgroundColor: 'rgba(87, 242, 135, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: { color: '#fff', font: { size: 12 } } }
+                            },
+                            scales: {
+                                y: {
+                                    grid: { color: '#2a2f4a' },
+                                    ticks: { color: '#aaa', font: { size: 11 } }
+                                },
+                                x: {
+                                    grid: { color: '#2a2f4a' },
+                                    ticks: { color: '#aaa', font: { size: 11 } }
+                                }
+                            }
+                        }
+                    });
+                    
+                    document.getElementById('chartModal').classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                });
+        }
+        
+        function pingService(serviceId) {
+            fetch(`/api/ping/${serviceId}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status) {
+                        alert(`✅ Ping réussi! Latence: ${data.latency_ms}ms`);
+                        loadServices();
+                    } else {
+                        alert('❌ Erreur lors du ping');
+                    }
+                })
+                .catch(() => alert('❌ Erreur réseau'));
+        }
+        
         function loadServices() {
             fetch('/api/services')
                 .then(r => r.json())
@@ -406,6 +563,8 @@
                             </div>
                             <div class="service-url">${s.url}</div>
                             <div class="service-buttons">
+                                <button class="btn-chart" onclick="showChart(${s.id}, '${s.name.replace(/'/g, "\\'")}')">📊 Voir</button>
+                                <button class="btn-ping" onclick="pingService(${s.id})">🔄 Ping</button>
                                 <button class="btn-delete" onclick="deleteService(${s.id})">🗑️ Supprimer</button>
                             </div>
                         </div>

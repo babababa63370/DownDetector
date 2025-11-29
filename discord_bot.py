@@ -156,11 +156,33 @@ async def check_services():
         
         for service in services:
             try:
+                import time
+                start_time = time.time()
                 async with aiohttp.ClientSession() as session:
                     async with session.get(service["url"], timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        latency_ms = int((time.time() - start_time) * 1000)
                         new_status = "online" if resp.status == 200 else "down"
                         
-                        # Update service status only
+                        # Enregistre le log
+                        try:
+                            log_resp = requests.post(
+                                f"{SUPABASE_URL}/rest/v1/ping_logs",
+                                json={
+                                    "service_id": service["id"],
+                                    "owner_id": service["owner_id"],
+                                    "service_name": service["name"],
+                                    "status": new_status,
+                                    "latency_ms": latency_ms
+                                },
+                                headers=SUPABASE_HEADERS,
+                                timeout=5
+                            )
+                            if log_resp.status_code in [200, 201]:
+                                print(f"✅ Log enregistré: {service['name']} ({latency_ms}ms)")
+                        except Exception as e:
+                            print(f"⚠️ Erreur log: {e}")
+                        
+                        # Update service status
                         try:
                             requests.patch(
                                 f"{SUPABASE_URL}/rest/v1/services?id=eq.{service['id']}",
@@ -168,9 +190,8 @@ async def check_services():
                                 headers=SUPABASE_HEADERS,
                                 timeout=5
                             )
-                            print(f"✅ Status mis à jour: {service['name']} -> {new_status}")
                         except Exception as e:
-                            print(f"⚠️ Erreur update status: {e}")
+                            print(f"⚠️ Erreur update: {e}")
             except Exception as e:
                 print(f"Erreur check {service.get('name')}: {e}")
     except Exception as e:

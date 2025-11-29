@@ -178,6 +178,62 @@ def api_status():
     except:
         return jsonify({'online': 0, 'down': 0, 'total': 0})
 
+@app.route('/api/logs/<int:service_id>')
+@require_login
+def get_logs(service_id):
+    try:
+        logs = query_supabase("ping_logs", f"?service_id=eq.{service_id}&order=created_at.desc&limit=100")
+        return jsonify(logs[::-1]), 200
+    except Exception as e:
+        return jsonify([]), 200
+
+@app.route('/api/ping/<int:service_id>', methods=['POST'])
+@require_login
+def manual_ping(service_id):
+    try:
+        services = query_supabase("services", f"?id=eq.{service_id}")
+        if not services:
+            return jsonify({'error': 'Service not found'}), 404
+        
+        service = services[0]
+        if service['owner_id'] != session['user_id']:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        import time
+        start_time = time.time()
+        resp = requests.get(service['url'], timeout=5)
+        latency_ms = int((time.time() - start_time) * 1000)
+        new_status = "online" if resp.status == 200 else "down"
+        
+        # Enregistre le log
+        log_resp = requests.post(
+            f"{SUPABASE_URL}/rest/v1/ping_logs",
+            json={
+                "service_id": service_id,
+                "owner_id": session['user_id'],
+                "service_name": service['name'],
+                "status": new_status,
+                "latency_ms": latency_ms
+            },
+            headers=SUPABASE_HEADERS,
+            timeout=5
+        )
+        
+        # Update status
+        requests.patch(
+            f"{SUPABASE_URL}/rest/v1/services?id=eq.{service_id}",
+            json={"status": new_status},
+            headers=SUPABASE_HEADERS,
+            timeout=5
+        )
+        
+        return jsonify({
+            'status': new_status,
+            'latency_ms': latency_ms
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     if DISCORD_TOKEN:
