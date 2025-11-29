@@ -6,6 +6,19 @@ from functools import wraps
 import os
 import hashlib
 import time
+import psycopg2
+
+def get_db_connection():
+    project_id = SUPABASE_URL.split("//")[1].split(".")[0]
+    conn = psycopg2.connect(
+        host=f"{project_id}.supabase.co",
+        port=5432,
+        database="postgres",
+        user="postgres",
+        password=SUPABASE_KEY,
+        connect_timeout=5
+    )
+    return conn
 
 # Discord OAuth URLs
 DISCORD_OAUTH_URL = "https://discord.com/api/oauth2/authorize"
@@ -183,8 +196,26 @@ def api_status():
 @require_login
 def get_logs(service_id):
     try:
-        logs = query_supabase("ping_logs", f"?service_id=eq.{service_id}&order=created_at.desc&limit=100")
-        return jsonify(logs[::-1]), 200
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, service_id, owner_id, service_name, status, latency_ms, created_at FROM ping_logs WHERE service_id = %s ORDER BY created_at ASC",
+            (service_id,)
+        )
+        logs = []
+        for row in cursor.fetchall():
+            logs.append({
+                'id': row[0],
+                'service_id': row[1],
+                'owner_id': row[2],
+                'service_name': row[3],
+                'status': row[4],
+                'latency_ms': row[5],
+                'created_at': row[6].isoformat()
+            })
+        cursor.close()
+        conn.close()
+        return jsonify(logs), 200
     except Exception as e:
         return jsonify([]), 200
 
@@ -205,27 +236,23 @@ def manual_ping(service_id):
         latency_ms = int((time.time() - start_time) * 1000)
         new_status = "online" if resp.status_code == 200 else "down"
         
-        # Enregistre le log via REST API
-        log_resp = requests.post(
-            f"{SUPABASE_URL}/rest/v1/ping_logs",
-            json={
-                "service_id": service_id,
-                "owner_id": session['user_id'],
-                "service_name": service['name'],
-                "status": new_status,
-                "latency_ms": latency_ms
-            },
-            headers=SUPABASE_HEADERS,
-            timeout=5
+        # Enregistre le log directement en PostgreSQL
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO ping_logs (service_id, owner_id, service_name, status, latency_ms) VALUES (%s, %s, %s, %s, %s)",
+            (service_id, session['user_id'], service['name'], new_status, latency_ms)
         )
         
-        # Update status
-        requests.patch(
-            f"{SUPABASE_URL}/rest/v1/services?id=eq.{service_id}",
-            json={"status": new_status},
-            headers=SUPABASE_HEADERS,
-            timeout=5
+        # Update service status
+        cursor.execute(
+            "UPDATE services SET status = %s WHERE id = %s",
+            (new_status, service_id)
         )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
         
         return jsonify({
             'status': new_status,

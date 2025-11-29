@@ -3,7 +3,20 @@ from discord.ext import commands, tasks
 import aiohttp
 import asyncio
 import requests
+import psycopg2
 from config import DISCORD_TOKEN, SUPABASE_URL, SUPABASE_KEY
+
+def get_db_connection():
+    project_id = SUPABASE_URL.split("//")[1].split(".")[0]
+    conn = psycopg2.connect(
+        host=f"{project_id}.supabase.co",
+        port=5432,
+        database="postgres",
+        user="postgres",
+        password=SUPABASE_KEY,
+        connect_timeout=5
+    )
+    return conn
 
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -163,37 +176,27 @@ async def check_services():
                         latency_ms = int((time.time() - start_time) * 1000)
                         new_status = "online" if resp.status == 200 else "down"
                         
-                        # Enregistre le log via REST API
+                        # Enregistre le log directement en PostgreSQL
                         try:
-                            log_resp = requests.post(
-                                f"{SUPABASE_URL}/rest/v1/ping_logs",
-                                json={
-                                    "service_id": service["id"],
-                                    "owner_id": service["owner_id"],
-                                    "service_name": service["name"],
-                                    "status": new_status,
-                                    "latency_ms": latency_ms
-                                },
-                                headers=SUPABASE_HEADERS,
-                                timeout=5
+                            conn = get_db_connection()
+                            cursor = conn.cursor()
+                            cursor.execute(
+                                "INSERT INTO ping_logs (service_id, owner_id, service_name, status, latency_ms) VALUES (%s, %s, %s, %s, %s)",
+                                (service["id"], service["owner_id"], service["name"], new_status, latency_ms)
                             )
-                            if log_resp.status_code in [200, 201]:
-                                print(f"✅ Log enregistré: {service['name']} ({latency_ms}ms)")
-                            else:
-                                print(f"⚠️ Log error: {log_resp.status_code}")
+                            
+                            # Update service status
+                            cursor.execute(
+                                "UPDATE services SET status = %s WHERE id = %s",
+                                (new_status, service["id"])
+                            )
+                            
+                            conn.commit()
+                            cursor.close()
+                            conn.close()
+                            print(f"✅ Log enregistré: {service['name']} ({latency_ms}ms)")
                         except Exception as e:
                             print(f"⚠️ Erreur log: {e}")
-                        
-                        # Update service status
-                        try:
-                            requests.patch(
-                                f"{SUPABASE_URL}/rest/v1/services?id=eq.{service['id']}",
-                                json={"status": new_status},
-                                headers=SUPABASE_HEADERS,
-                                timeout=5
-                            )
-                        except Exception as e:
-                            print(f"⚠️ Erreur update: {e}")
             except Exception as e:
                 print(f"Erreur check {service.get('name')}: {e}")
     except Exception as e:
