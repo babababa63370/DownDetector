@@ -48,7 +48,7 @@ externalPort = 80
 [userenv]
 
 [userenv.shared]
-SUPABASE_URL = "https://tveszqlepniwzaqygtlu.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2ZXN6cWxlcG5pd3phcXlndGx1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNjM4MDcsImV4cCI6MjA3OTkzOTgwN30.YI9qcLtpV95-je5tE2cpte1q3WGDrGtW9PH1wqRYtbk"
+SUPABASE_URL = "https://ykxyzatvwscchlaszzjw.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlreHl6YXR2d3NjY2hsYXN6emp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzNzA1NDksImV4cCI6MjA3OTk0NjU0OX0.1dAxzb49qIGTAUrMhLOtpmZvQIOj9W72-kbUp7DpFIg"
 DISCORD_CLIENT_ID = "1444101008778330294"
 CALLBACK_URL = "https://0f19beb3-5918-4629-9b4b-283c0f6e2372-00-2w544i7ovzoww.janeway.replit.dev/callback/discord"
