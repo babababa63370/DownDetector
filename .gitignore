@@ -130,7 +130,15 @@ dist
 .pnp.*
 
 # Replit debugger
-.breakpoints.env
+.breakpoints
+.env
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .cache/
+.venv/
+venv/
+.pythonlibs/
+.replit
+replit.nix
